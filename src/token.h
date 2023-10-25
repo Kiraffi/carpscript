@@ -17,14 +17,15 @@ enum class TokenType: u8
     LESSER, LESSER_EQUAL,
 
     // Literals
-    IDENTIFIER, STRING, INTEGER, NUMBER,
+    IDENTIFIER, BOOL, STRING, I8, I16, I32, I64, U8, U16, U32, U64, F32, F64,
 
     // Keywords
-    CLASS, SUPER,
+    LET, MUT,
+    STRUCT,
     AND, OR,
-    ELSE, FUNC, FOR, IF, NIL, THIS, WHILE,
+    ELSE, FN, FOR, IF, NIL, WHILE,
     PRINT, RETURN,
-    TRUE, FALSE, VAR,
+    TRUE, FALSE,
 
 
     // End of file must be last
@@ -43,14 +44,15 @@ static const char* TOKEN_NAMES[] = {
     "LESSER", "LESSER_EQUAL",
 
     // Literals
-    "IDENTIFIER", "STRING", "INTEGER", "NUMBER",
+    "IDENTIFIER", "BOOL", "STRING", "I8", "I16", "I32", "I64", "U8", "U16", "U32", "U64", "F32", "F64",
 
     // Keywords
-    "CLASS", "SUPER",
+    "LET", "MUT",
+    "STRUCT",
     "AND", "OR",
-    "ELSE", "FUNC", "FOR", "IF", "NIL", "THIS", "WHILE",
+    "ELSE", "FN", "FOR", "IF", "NIL", "WHILE",
     "PRINT", "RETURN",
-    "TRUE", "FALSE", "VAR",
+    "TRUE", "FALSE",
 
 
     // End of file must be last
