@@ -6,6 +6,8 @@
 
 #include <vector>
 
+
+
 enum ValueType: u8
 {
     ValueTypeNone,
@@ -100,3 +102,4 @@ struct StructDesc
     u32 structSize;
 };
 
+void printValue(const u64* value, ValueType type);

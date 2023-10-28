@@ -13,4 +13,7 @@ add_executable(carpscript src/main.cpp
         src/debug.cpp
         src/script.h
         src/common.h
-        src/script.cpp)
+        src/script.cpp
+        src/vm.h
+        src/vm.cpp
+        src/common.cpp)

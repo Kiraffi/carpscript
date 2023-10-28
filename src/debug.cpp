@@ -5,19 +5,17 @@
 #include "op.h"
 #include "script.h"
 
-#include <inttypes.h>
-#include <stdio.h>
-
 void disassembleCode(const Script& script, const char* name)
 {
 
     printf("== %s ==\n", name);
     i32 offset = 0;
-    i32 length = script.byteCode.size();
+    i32 length = (i32)script.byteCode.size();
     while(offset < length)
     {
         offset = disassembleInstruction(script, offset);
     }
+    printf("== End of %s ==\n\n", name);
 }
 
 static i32 simpleOpCode(const char* name, i32 offset)
@@ -30,25 +28,38 @@ static i32 constantOpCode(const char* name, const Script& script, i32 offset, Va
 {
     u16 lookupIndex = script.byteCode[offset + 1];
 
-
     printf("%-16s %4x '", name, lookupIndex);
+
     printValue(&script.structValueArray[lookupIndex], type);
-    printf("\n");
+    printf("'\n");
 
     return offset + 1 + 1; // getValueTypeSizeInOpCodes(type);
 }
 
 i32 disassembleInstruction(const Script& script, i32 offset)
 {
-    printf("%04x ", offset);
+    printf("%05x ", offset);
+    if(offset > 0 && script.byteCodeLines[offset - 1] == script.byteCodeLines[offset])
+    {
+        printf("   | ");
+    }
+    else
+    {
+        printf("%4d ", script.byteCodeLines[offset]);
+    }
     OpCodeType opCode = script.byteCode[offset];
+    const char* opName = getOpCodeName(opCode);
     switch(opCode)
     {
         case OP_RETURN:
-        {
-            return simpleOpCode("OP_RETURN", offset);
-        }
+        case OP_NEGATE:
+        case OP_ADD:
+        case OP_SUB:
+        case OP_MUL:
+        case OP_DIV:
+            return simpleOpCode(opName, offset);
 
+        case OP_CONSTANT_BOOL:
         case OP_CONSTANT_I8:
         case OP_CONSTANT_U8:
         case OP_CONSTANT_I16:
@@ -60,7 +71,7 @@ i32 disassembleInstruction(const Script& script, i32 offset)
         case OP_CONSTANT_F32:
         case OP_CONSTANT_F64:
         {
-            return constantOpCode("OP_CONSTANT", script, offset, ValueType((opCode & 0xf) + ValueTypeI8));
+            return constantOpCode(opName, script, offset, ValueType((opCode & 0xff) + ValueTypeBool));
         }
 
 
@@ -72,25 +83,3 @@ i32 disassembleInstruction(const Script& script, i32 offset)
     }
 }
 
-void printValue(const u8* value, ValueType type)
-{
-    switch(type)
-    {
-        case ValueTypeBool: printf("%s", *value ? "true" : "false"); break;
-        case ValueTypeI8: printf("%" PRIi8, *((i8*)value)); break;
-        case ValueTypeU8: printf("%" PRIu8, *value); break;
-        case ValueTypeI16: printf("%" PRIi16, *((i16*)value)); break;
-        case ValueTypeU16: printf("%" PRIu16, *((i16*)value)); break;
-        case ValueTypeI32: printf("%" PRIi32, *((i32*)value)); break;
-        case ValueTypeU32: printf("%" PRIu32, *((u32*)value)); break;
-        case ValueTypeI64: printf("%" PRIi64, *((i64*)value)); break;
-        case ValueTypeU64: printf("%" PRIu64, *((u64*)value)); break;
-        case ValueTypeF32: printf("%f", *((f32*)value)); break;
-        case ValueTypeF64: printf("%f", *((f64*)value)); break;
-
-        case ValueTypeStruct:
-        case ValueTypeNone:
-        case ValueTypeCount:
-            printf("Not default type: %i", type);
-    }
-}

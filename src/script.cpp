@@ -3,7 +3,12 @@
 #include <assert.h>
 
 template <typename T>
-static i32 addConsantTemplate(Script& script, i32 structIndex, T constantValue, ValueType type)
+static i32 addConsantTemplate(
+    Script& script,
+    i32 structIndex,
+    T constantValue,
+    ValueType type,
+    i32 lineNumber)
 {
     assert(structIndex >= 0 && structIndex == script.structDescs.size() - 1);
 
@@ -12,28 +17,30 @@ static i32 addConsantTemplate(Script& script, i32 structIndex, T constantValue, 
 
     assert(paramIndex == script.structValueTypes.size());
     assert(paramIndex == script.structValueMemoryPosition.size());
+    assert(paramIndex == script.currentStructValuePos);
+    assert(paramIndex == script.structSymbolNameIndices.size());
 
     script.structValueTypes.emplace_back(ValueTypeDesc{.valueType = type});
     // "constant" should always be 0
     script.structSymbolNameIndices.emplace_back(addSymbolName(script, "constant"));
 
-    i32 memPos = script.currentStructValuePos + sizeof(T) - 1;
-    memPos &= ~(sizeof(T) - 1);
+    i32 memPos = script.currentStructValuePos;
 
     script.structValueMemoryPosition.emplace_back(memPos);
 
-    while(memPos + sizeof(T) > script.structValueArray.size())
+    while(memPos + 1 > script.structValueArray.size())
     {
         script.structValueArray.emplace_back(0);
     }
 
-    u8* p = &script.structValueArray[memPos];
+    u64* p = &script.structValueArray[memPos];
     T* t = (T*)p;
     *t = constantValue;
 
-    updateCurrentStructValuePos(script, memPos + sizeof(T));
+    updateCurrentStructValuePos(script, memPos + 1);
 
     script.byteCode.emplace_back(memPos);
+    script.byteCodeLines.emplace_back(lineNumber);
     return memPos;
 }
 
@@ -45,9 +52,10 @@ void updateCurrentStructValuePos(Script& script, i32 value)
 }
 
 
-i32 addOpCode(Script& script, Op op)
+i32 addOpCode(Script& script, Op op, i32 lineNumber)
 {
     script.byteCode.emplace_back(op);
+    script.byteCodeLines.emplace_back(lineNumber);
     return (i32)script.byteCode.size() - 1;
 }
 
@@ -73,44 +81,44 @@ i32 addStruct(Script& script, const char* name)
     return index;
 }
 
-i32 addConstant(Script& script, i32 structIndex, i8 constantValue)
+i32 addConstant(Script& script, i32 structIndex, i8 constantValue, i32 lineNumber)
 {
-    return addConsantTemplate(script, structIndex, constantValue, ValueTypeI8);
+    return addConsantTemplate(script, structIndex, constantValue, ValueTypeI8, lineNumber);
 }
-i32 addConstant(Script& script, i32 structIndex, u8 constantValue)
+i32 addConstant(Script& script, i32 structIndex, u8 constantValue, i32 lineNumber)
 {
-    return addConsantTemplate(script, structIndex, constantValue, ValueTypeU8);
+    return addConsantTemplate(script, structIndex, constantValue, ValueTypeU8, lineNumber);
 }
-i32 addConstant(Script& script, i32 structIndex, i16 constantValue)
+i32 addConstant(Script& script, i32 structIndex, i16 constantValue, i32 lineNumber)
 {
-    return addConsantTemplate(script, structIndex, constantValue, ValueTypeI16);
+    return addConsantTemplate(script, structIndex, constantValue, ValueTypeI16, lineNumber);
 }
-i32 addConstant(Script& script, i32 structIndex, u16 constantValue)
+i32 addConstant(Script& script, i32 structIndex, u16 constantValue, i32 lineNumber)
 {
-    return addConsantTemplate(script, structIndex, constantValue, ValueTypeU16);
+    return addConsantTemplate(script, structIndex, constantValue, ValueTypeU16, lineNumber);
 }
-i32 addConstant(Script& script, i32 structIndex, i32 constantValue)
+i32 addConstant(Script& script, i32 structIndex, i32 constantValue, i32 lineNumber)
 {
-    return addConsantTemplate(script, structIndex, constantValue, ValueTypeI32);
+    return addConsantTemplate(script, structIndex, constantValue, ValueTypeI32, lineNumber);
 }
-i32 addConstant(Script& script, i32 structIndex, u32 constantValue)
+i32 addConstant(Script& script, i32 structIndex, u32 constantValue, i32 lineNumber)
 {
-    return addConsantTemplate(script, structIndex, constantValue, ValueTypeU32);
+    return addConsantTemplate(script, structIndex, constantValue, ValueTypeU32, lineNumber);
 }
-i32 addConstant(Script& script, i32 structIndex, i64 constantValue)
+i32 addConstant(Script& script, i32 structIndex, i64 constantValue, i32 lineNumber)
 {
-    return addConsantTemplate(script, structIndex, constantValue, ValueTypeI64);
+    return addConsantTemplate(script, structIndex, constantValue, ValueTypeI64, lineNumber);
 }
-i32 addConstant(Script& script, i32 structIndex, u64 constantValue)
+i32 addConstant(Script& script, i32 structIndex, u64 constantValue, i32 lineNumber)
 {
-    return addConsantTemplate(script, structIndex, constantValue, ValueTypeU16);
+    return addConsantTemplate(script, structIndex, constantValue, ValueTypeU16, lineNumber);
 }
-i32 addConstant(Script& script, i32 structIndex, f32 constantValue)
+i32 addConstant(Script& script, i32 structIndex, f32 constantValue, i32 lineNumber)
 {
-    return addConsantTemplate(script, structIndex, constantValue, ValueTypeF32);
+    return addConsantTemplate(script, structIndex, constantValue, ValueTypeF32, lineNumber);
 }
-i32 addConstant(Script& script, i32 structIndex, f64 constantValue)
+i32 addConstant(Script& script, i32 structIndex, f64 constantValue, i32 lineNumber)
 {
-    return addConsantTemplate(script, structIndex, constantValue, ValueTypeF64);
+    return addConsantTemplate(script, structIndex, constantValue, ValueTypeF64, lineNumber);
 }
 
