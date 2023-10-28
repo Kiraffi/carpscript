@@ -17,9 +17,11 @@ enum class TokenType: u8
     LESSER, LESSER_EQUAL,
 
     // Literals
-    IDENTIFIER, BOOL, STRING, I8, I16, I32, I64, U8, U16, U32, U64, F32, F64,
+    IDENTIFIER, LITERAL_BOOL, LITERAL_STRING, NUMBER,
 
     // Keywords
+    I8, I16, I32, I64, U8, U16, U32, U64, F32, F64,
+    STRING, BOOL,
     LET, MUT,
     STRUCT,
     AND, OR,
@@ -27,7 +29,7 @@ enum class TokenType: u8
     PRINT, RETURN,
     TRUE, FALSE,
 
-
+    TOKEN_ERROR,
     // End of file must be last
     END_OF_FILE,
 };
@@ -44,9 +46,11 @@ static const char* TOKEN_NAMES[] = {
     "LESSER", "LESSER_EQUAL",
 
     // Literals
-    "IDENTIFIER", "BOOL", "STRING", "I8", "I16", "I32", "I64", "U8", "U16", "U32", "U64", "F32", "F64",
+    "IDENTIFIER", "LITERAL_BOOL", "LITERAL_STRING", "NUMBER",
 
     // Keywords
+    "I8", "I16", "I32", "I64", "U8", "U16", "U32", "U64", "F32", "F64",
+    "STRING", "BOOL",
     "LET", "MUT",
     "STRUCT",
     "AND", "OR",
@@ -54,7 +58,7 @@ static const char* TOKEN_NAMES[] = {
     "PRINT", "RETURN",
     "TRUE", "FALSE",
 
-
+    "TOKEN_ERROR",
     // End of file must be last
     "END_OF_FILE",
 };
@@ -62,7 +66,8 @@ static_assert(sizeof(TOKEN_NAMES) / sizeof(const char*) == (i32)(TokenType::END_
 
 struct Token
 {
-    const char* start;
-    u32 len;
+    const u8* start;
+    i32 len;
+    i32 line;
     TokenType type;
 };

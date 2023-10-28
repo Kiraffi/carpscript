@@ -1,59 +1,99 @@
+#include <stdlib.h>
+#include <string.h>
 
-#include "debug.h"
+#include <vector>
+
+#include "compiler.h"
+#include "error.h"
 #include "mymemory.h"
 #include "mytypes.h"
-#include "op.h"
-#include "script.h"
-#include "vm.h"
+#include "token.h"
 
-int main()
+
+static bool runFile(const char* filename)
 {
-    MyMemory mem;
+    printf("Filename: %s\n", filename);
+
+    if(filename == nullptr)
+    {
+        LOG_ERROR("Filename is nullptr");
+        return false;
+    }
+
+    FILE* file = fopen(filename, "rb");
+    if(file == nullptr)
+    {
+        LOG_ERROR("Failed to open file.");
+        return false;
+    }
+    MyMemory mem{};
+
+    fseek(file, 0L, SEEK_END);
+    size_t sz = ftell(file);
+    fseek(file, 0L, SEEK_SET);
+
     Script& script = mem.scripts[addNewScript(mem)];
 
+    mem.scriptFile.resize(sz + 1);
+    fread(mem.scriptFile.data(), 1, sz, file);
+    mem.scriptFile[sz] = '\0';
+    fclose(file);
+
+    if(!compile(mem, script))
+    {
+        printf("Failed to compile: %s\n", filename);
+    }
+    else
+    {
+        /*
+        // printf("%s\n", mem.scriptFileData.data());
+        if(ast_generate(mem))
+        {
+            for(i32 index : mem.blocks[0].statementIndices)
+            {
+                const Statement& statement = mem.statements[index];
+                interpret(mem, statement);
+            }
+        }
+         */
+    }
 
 
-    addOpCode(script, OP_CONSTANT_U8, 1);
-    addConstant(script, 0, u8(3), 1);
-
-
-    addOpCode(script, OP_CONSTANT_I8, 1);
-    addConstant(script, 0, i8(-2), 1);
-
-    addOpCode(script, OP_CONSTANT_I8, 4);
-    addConstant(script, 0, i8(-40), 4);
+    return true;
+}
 
 
 
-    addOpCode(script, OP_CONSTANT_I32, 3);
-    addConstant(script, 0, i32(-2), 3);
+static void runPrompt()
+{
+}
 
-    addOpCode(script, OP_CONSTANT_I32, 3);
-    addConstant(script, 0, i32(-18), 3);
-
-    addOpCode(script, OP_CONSTANT_I32, 3);
-    addConstant(script, 0, i32(-12), 3);
-
-    addOpCode(script, OP_CONSTANT_I32, 3);
-    addConstant(script, 0, i32(1), 3);
-
-
-    addOpCode(script, OP_SUB, 0);
-    addOpCode(script, OP_ADD, 0);
-    addOpCode(script, OP_NEGATE, 0);
-
-    addOpCode(script, OP_MUL, 0);
-
-    addOpCode(script, OP_CONSTANT_I32, 3);
-    addConstant(script, 0, i32(10), 3);
-    addOpCode(script, OP_DIV, 0);
-
-    addOpCode(script, OP_RETURN, 0);
-
-
-    disassembleCode(script, "test op");
-
-    interpret(script);
-
+int main(int argc, const char** argv)
+{
+    if(argc > 3)
+    {
+        printf("Usage: carp [script]\n");
+        return 64;
+    }
+    else if(argc == 2)
+    {
+        if(!runFile(argv[1]))
+        {
+            printf("Failed to run file: %s\n", argv[1]);
+        }
+    }
+    else
+    {
+        const char* filename = "prog/print.carp";
+        if(!runFile(filename))
+        {
+            printf("Failed to run file: %s\n", filename);
+        }
+        printf("Script scanned!\n");
+        //runPrompt();
+    }
+    //printf("Wait until enter pressed!\n");
+    //char tmp;
+    //scanf("%c", &tmp);
     return 0;
 }

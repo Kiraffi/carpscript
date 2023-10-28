@@ -17,7 +17,10 @@ using i64 = int64_t;
 using f32 = float;
 using f64 = double;
 
-
+static bool isAlphaUnderscore(char c)
+{
+    return isalpha(c) || c == '_';
+}
 
 static bool isAlphaNumUnderscore(char c)
 {

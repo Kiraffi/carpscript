@@ -4,16 +4,19 @@ project(carpscript)
 set(CMAKE_CXX_STANDARD 20)
 
 add_executable(carpscript src/main.cpp
-        src/mymemory.h
-        src/mymemory.cpp
-        src/mytypes.h
-        src/token.h
-        src/op.h
-        src/debug.h
-        src/debug.cpp
-        src/script.h
+        src/common.cpp
         src/common.h
+        src/compiler.cpp
+        src/debug.cpp
+        src/debug.h
+        src/error.h
+        src/mymemory.cpp
+        src/mymemory.h
+        src/mytypes.h
+        src/op.h
         src/script.cpp
-        src/vm.h
+        src/script.h
+        src/token.h
         src/vm.cpp
-        src/common.cpp)
+        src/vm.h
+)
