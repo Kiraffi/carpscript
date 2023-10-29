@@ -125,7 +125,7 @@ static ParseRule getRule(TokenType type)
         case TokenType::SEMICOLON:        return {NULL,     NULL,   PREC_NONE};   break;
         case TokenType::SLASH:            return {NULL,     binary, PREC_FACTOR}; break;
         case TokenType::STAR:             return {NULL,     binary, PREC_FACTOR}; break;
-        case TokenType::BANG:             return {NULL,     NULL,   PREC_NONE};   break;
+        case TokenType::BANG:             return {unary,    NULL,   PREC_NONE};   break;
         case TokenType::BANG_EQUAL:       return {NULL,     NULL,   PREC_NONE};   break;
         case TokenType::EQUAL:            return {NULL,     NULL,   PREC_NONE};   break;
         case TokenType::EQUAL_EQUAL:      return {NULL,     NULL,   PREC_NONE};   break;
@@ -268,7 +268,7 @@ static void literal(Parser& parser)
     {
         case TokenType::FALSE: emitByteCode(parser, OP_CONSTANT_BOOL);  addConstant(parser.script, false, parser.previous.line); break;
         case TokenType::TRUE:  emitByteCode(parser, OP_CONSTANT_BOOL);  addConstant(parser.script, true, parser.previous.line); break;
-        case TokenType::NIL:   emitByteCode(parser, OP_NIL);            addConstant(parser.script, parser.previous.line); break;
+        case TokenType::NIL:   emitByteCode(parser, OP_NIL); break;
         default: return;
     }
 }
@@ -288,6 +288,7 @@ static void unary(Parser& parser)
 
     switch(operatorType)
     {
+        case TokenType::BANG:  emitByteCode(parser, OP_NOT); break;
         case TokenType::MINUS: emitByteCode(parser, OP_NEGATE); break;
         default: return;
     }
@@ -356,6 +357,6 @@ bool compile(MyMemory& mem, Script& script)
     advance(parser);
     expression(parser);
     consume(parser, TokenType::END_OF_FILE, "Expect end of expression.");
-
+    emitByteCode(parser, OP_RETURN);
     return !parser.hadError;
 }

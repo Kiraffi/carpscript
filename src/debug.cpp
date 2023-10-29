@@ -59,6 +59,7 @@ i32 disassembleInstruction(const Script& script, i32 offset)
         case OP_MUL:
         case OP_DIV:
         case OP_NIL:
+        case OP_NOT:
             return simpleOpCode(opName, offset);
 
         case OP_CONSTANT_BOOL:

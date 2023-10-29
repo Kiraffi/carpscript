@@ -20,6 +20,8 @@ enum Op : OpCodeType
 
     OP_NIL,
 
+    OP_NOT,
+
     OP_CONSTANT_BOOL = 0x100,
     OP_CONSTANT_I8,
     OP_CONSTANT_U8,
@@ -50,7 +52,7 @@ static const char* getOpCodeName(OpCodeType type)
         case OP_DIV: return "OP_DIV";
 
         case OP_NIL: return "OP_NIL";
-
+        case OP_NOT: return "OP_NOT";
         case OP_CONSTANT_BOOL: return "OP_CONSTANT_BOOL";
         case OP_CONSTANT_I8: return "OP_CONSTANT_I8";
         case OP_CONSTANT_U8: return "OP_CONSTANT_U8";

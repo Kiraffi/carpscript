@@ -21,6 +21,11 @@ struct VMRuntime
     i32 line;
 };
 
+static bool truthy(u64 value)
+{
+    return value != 0;
+}
+
 static i32 getInstructionIndex(const OpCodeType* current, const OpCodeType* start)
 {
     return i32(intptr_t(current) - intptr_t(start)) / OpCodeTypeSize;
@@ -185,11 +190,22 @@ InterpretResult runCode(Script& script)
                 //printf("\n");
                 break;
             }
+            case OP_NOT:
+            {
+                u64 value = stack.back();
+                stack.pop_back();
+
+                stack.push_back(!truthy(value));
+                stackValueInfo.pop_back();
+                stackValueInfo.push_back({.valueType = ValueTypeBool});
+                break;
+            }
             case OP_NIL:
+            {
                 stackValueInfo.push_back(ValueTypeDesc{.valueType = ValueTypeNull});
                 stack.push_back(0);
                 break;
-
+            }
             case OP_NEGATE:
             {
                 ValueTypeDesc* desc;
