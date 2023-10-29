@@ -114,44 +114,44 @@ static ParseRule getRule(TokenType type)
 
     switch(type)
     {
-        case TokenType::LEFT_PAREN:       return {grouping, NULL,   PREC_NONE};   break;
-        case TokenType::RIGHT_PAREN:      return {NULL,     NULL,   PREC_NONE};   break;
-        case TokenType::LEFT_BRACE:       return {NULL,     NULL,   PREC_NONE};   break;
-        case TokenType::RIGHT_BRACE:      return {NULL,     NULL,   PREC_NONE};   break;
-        case TokenType::COMMA:            return {NULL,     NULL,   PREC_NONE};   break;
-        case TokenType::DOT:              return {NULL,     NULL,   PREC_NONE};   break;
-        case TokenType::MINUS:            return {unary,    binary, PREC_TERM};   break;
-        case TokenType::PLUS:             return {NULL,     binary, PREC_TERM};   break;
-        case TokenType::SEMICOLON:        return {NULL,     NULL,   PREC_NONE};   break;
-        case TokenType::SLASH:            return {NULL,     binary, PREC_FACTOR}; break;
-        case TokenType::STAR:             return {NULL,     binary, PREC_FACTOR}; break;
-        case TokenType::BANG:             return {unary,    NULL,   PREC_NONE};   break;
-        case TokenType::BANG_EQUAL:       return {NULL,     NULL,   PREC_NONE};   break;
-        case TokenType::EQUAL:            return {NULL,     NULL,   PREC_NONE};   break;
-        case TokenType::EQUAL_EQUAL:      return {NULL,     NULL,   PREC_NONE};   break;
-        case TokenType::GREATER:          return {NULL,     NULL,   PREC_NONE};   break;
-        case TokenType::GREATER_EQUAL:    return {NULL,     NULL,   PREC_NONE};   break;
-        case TokenType::LESSER:           return {NULL,     NULL,   PREC_NONE};   break;
-        case TokenType::LESSER_EQUAL:     return {NULL,     NULL,   PREC_NONE};   break;
-        case TokenType::IDENTIFIER:       return {NULL,     NULL,   PREC_NONE};   break;
-        case TokenType::STRING:           return {NULL,     NULL,   PREC_NONE};   break;
-        case TokenType::NUMBER:           return {number,   NULL,   PREC_NONE};   break;
-        case TokenType::INTEGER:          return {number,   NULL,   PREC_NONE};   break;
-        case TokenType::AND:              return {NULL,     NULL,   PREC_NONE};   break;
-        case TokenType::STRUCT:           return {NULL,     NULL,   PREC_NONE};   break;
-        case TokenType::ELSE:             return {NULL,     NULL,   PREC_NONE};   break;
-        case TokenType::FALSE:            return {literal,  NULL,   PREC_NONE};   break;
-        case TokenType::FOR:              return {NULL,     NULL,   PREC_NONE};   break;
-        case TokenType::FN:               return {NULL,     NULL,   PREC_NONE};   break;
-        case TokenType::IF:               return {NULL,     NULL,   PREC_NONE};   break;
-        case TokenType::NIL:              return {literal,  NULL,   PREC_NONE};   break;
-        case TokenType::OR:               return {NULL,     NULL,   PREC_NONE};   break;
-        case TokenType::PRINT:            return {NULL,     NULL,   PREC_NONE};   break;
-        case TokenType::RETURN:           return {NULL,     NULL,   PREC_NONE};   break;
-        case TokenType::TRUE:             return {literal,  NULL,   PREC_NONE};   break;
-        case TokenType::WHILE:            return {NULL,     NULL,   PREC_NONE};   break;
-        case TokenType::TOKEN_ERROR:      return {NULL,     NULL,   PREC_NONE};   break;
-        case TokenType::END_OF_FILE:      return {NULL,     NULL,   PREC_NONE};   break;
+        case TokenType::LEFT_PAREN:       return {grouping, NULL,   PREC_NONE};         break;
+        case TokenType::RIGHT_PAREN:      return {NULL,     NULL,   PREC_NONE};         break;
+        case TokenType::LEFT_BRACE:       return {NULL,     NULL,   PREC_NONE};         break;
+        case TokenType::RIGHT_BRACE:      return {NULL,     NULL,   PREC_NONE};         break;
+        case TokenType::COMMA:            return {NULL,     NULL,   PREC_NONE};         break;
+        case TokenType::DOT:              return {NULL,     NULL,   PREC_NONE};         break;
+        case TokenType::MINUS:            return {unary,    binary, PREC_TERM};         break;
+        case TokenType::PLUS:             return {NULL,     binary, PREC_TERM};         break;
+        case TokenType::SEMICOLON:        return {NULL,     NULL,   PREC_NONE};         break;
+        case TokenType::SLASH:            return {NULL,     binary, PREC_FACTOR};       break;
+        case TokenType::STAR:             return {NULL,     binary, PREC_FACTOR};       break;
+        case TokenType::BANG:             return {unary,    NULL,   PREC_NONE};         break;
+        case TokenType::BANG_EQUAL:       return {NULL,     binary, PREC_EQUALITY};     break;
+        case TokenType::EQUAL:            return {NULL,     NULL,   PREC_NONE};         break;
+        case TokenType::EQUAL_EQUAL:      return {NULL,     binary, PREC_COMPARISON};   break;
+        case TokenType::GREATER:          return {NULL,     binary, PREC_COMPARISON};   break;
+        case TokenType::GREATER_EQUAL:    return {NULL,     binary, PREC_COMPARISON};   break;
+        case TokenType::LESSER:           return {NULL,     binary, PREC_COMPARISON};   break;
+        case TokenType::LESSER_EQUAL:     return {NULL,     binary, PREC_COMPARISON};   break;
+        case TokenType::IDENTIFIER:       return {NULL,     NULL,   PREC_NONE};         break;
+        case TokenType::STRING:           return {NULL,     NULL,   PREC_NONE};         break;
+        case TokenType::NUMBER:           return {number,   NULL,   PREC_NONE};         break;
+        case TokenType::INTEGER:          return {number,   NULL,   PREC_NONE};         break;
+        case TokenType::AND:              return {NULL,     NULL,   PREC_NONE};         break;
+        case TokenType::STRUCT:           return {NULL,     NULL,   PREC_NONE};         break;
+        case TokenType::ELSE:             return {NULL,     NULL,   PREC_NONE};         break;
+        case TokenType::FALSE:            return {literal,  NULL,   PREC_NONE};         break;
+        case TokenType::FOR:              return {NULL,     NULL,   PREC_NONE};         break;
+        case TokenType::FN:               return {NULL,     NULL,   PREC_NONE};         break;
+        case TokenType::IF:               return {NULL,     NULL,   PREC_NONE};         break;
+        case TokenType::NIL:              return {literal,  NULL,   PREC_NONE};         break;
+        case TokenType::OR:               return {NULL,     NULL,   PREC_NONE};         break;
+        case TokenType::PRINT:            return {NULL,     NULL,   PREC_NONE};         break;
+        case TokenType::RETURN:           return {NULL,     NULL,   PREC_NONE};         break;
+        case TokenType::TRUE:             return {literal,  NULL,   PREC_NONE};         break;
+        case TokenType::WHILE:            return {NULL,     NULL,   PREC_NONE};         break;
+        case TokenType::TOKEN_ERROR:      return {NULL,     NULL,   PREC_NONE};         break;
+        case TokenType::END_OF_FILE:      return {NULL,     NULL,   PREC_NONE};         break;
         default:
             return {NULL, NULL, PREC_NONE};
     }
@@ -302,6 +302,13 @@ static void binary(Parser& parser)
 
     switch(operatorType)
     {
+        case TokenType::BANG_EQUAL:     emitBytes(parser, OP_EQUAL, OP_NOT); break;
+        case TokenType::EQUAL_EQUAL:    emitByteCode(parser,OP_EQUAL); break;
+        case TokenType::GREATER:        emitByteCode(parser,OP_GREATER); break;
+        case TokenType::GREATER_EQUAL:  emitBytes(parser, OP_LESSER, OP_NOT); break;
+        case TokenType::LESSER:         emitByteCode(parser, OP_LESSER); break;
+        case TokenType::LESSER_EQUAL:   emitBytes(parser, OP_GREATER, OP_NOT); break;
+
         case TokenType::PLUS:  emitByteCode(parser, OP_ADD); break;
         case TokenType::MINUS: emitByteCode(parser, OP_SUB); break;
         case TokenType::STAR:  emitByteCode(parser, OP_MUL); break;

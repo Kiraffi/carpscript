@@ -21,9 +21,39 @@ struct VMRuntime
     i32 line;
 };
 
-static bool truthy(u64 value)
+static bool truthy(StackType value)
 {
     return value != 0;
+}
+
+struct HelperStruct
+{
+    StackType valueA;
+    StackType valueB;
+    ValueTypeDesc descA;
+    ValueTypeDesc descB;
+};
+
+static HelperStruct valuesEqualHelper(std::vector<StackType>& stack, std::vector<ValueTypeDesc> &stackValueInfo)
+{
+    HelperStruct result;
+    result.valueB = stack.back();
+    stack.pop_back();
+    result.valueA = stack.back();
+    stack.pop_back();
+    result.descB = stackValueInfo.back();
+    stackValueInfo.pop_back();
+    result.descA = stackValueInfo.back();
+    stackValueInfo.pop_back();
+    return result;
+}
+
+static bool valuesEqual(std::vector<StackType>& stack, std::vector<ValueTypeDesc> &stackValueInfo)
+{
+    HelperStruct s = valuesEqualHelper(stack, stackValueInfo);
+    bool isTrue = s.descB.valueType == s.descA.valueType;
+    stack.push_back((isTrue && s.valueA == s.valueB) ? ~(0) : 0);
+    stackValueInfo.push_back({.valueType = ValueTypeBool});
 }
 
 static i32 getInstructionIndex(const OpCodeType* current, const OpCodeType* start)
@@ -111,7 +141,7 @@ static bool doBinaryOp(
     {
         return false;
     }
-    u64 finalValue;
+    StackType finalValue;
     switch(valueDesc.valueType)
     {
         case ValueTypeI8: finalValue = doBinaryOpOp<i8>(value, value2, opCode); break;
@@ -142,7 +172,7 @@ InterpretResult runCode(Script& script)
 
     // Does stack need type info stack?
     u32 stackIndex = 0;
-    std::vector<u64> stack;
+    std::vector<StackType> stack;
     std::vector<ValueTypeDesc> stackValueInfo;
     stack.reserve(1024 * 1024);
     stackValueInfo.reserve(1024 * 1024);
@@ -158,7 +188,7 @@ InterpretResult runCode(Script& script)
             case OP_END_OF_FILE:
             case OP_RETURN:
             {
-                u64 value = stack.back();
+                StackType value = stack.back();
                 stack.pop_back();
 
                 ValueTypeDesc valueDesc = stackValueInfo.back();
@@ -181,7 +211,7 @@ InterpretResult runCode(Script& script)
             case OP_CONSTANT_F64:
             {
                 u16 lookupIndex = *ip++;
-                u64* value = &script.structValueArray[lookupIndex];
+                StackType* value = &script.structValueArray[lookupIndex];
                 stack.push_back(*value);
                 ValueType type = ValueType((opCode & 0xf) + ValueTypeBool);
                 stackValueInfo.push_back(ValueTypeDesc{.valueType = type });
@@ -192,7 +222,7 @@ InterpretResult runCode(Script& script)
             }
             case OP_NOT:
             {
-                u64 value = stack.back();
+                StackType value = stack.back();
                 stack.pop_back();
 
                 stack.push_back(!truthy(value));
@@ -206,6 +236,15 @@ InterpretResult runCode(Script& script)
                 stack.push_back(0);
                 break;
             }
+            case OP_EQUAL:
+            {
+                valuesEqual(stack, stackValueInfo);
+                break;
+            }
+            case OP_GREATER:
+            {
+
+            }
             case OP_NEGATE:
             {
                 ValueTypeDesc* desc;
@@ -218,7 +257,7 @@ InterpretResult runCode(Script& script)
                 }
                 if(desc->valueType >= ValueTypeI8 && desc->valueType <= ValueTypeF64)
                 {
-                    u64 value = stack.back();
+                    StackType value = stack.back();
                     stack.pop_back();
                     stack.push_back(-value);
                     break;
