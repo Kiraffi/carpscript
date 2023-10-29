@@ -19,6 +19,7 @@ void printValue(const u64* value, ValueType type)
         case ValueTypeF32: printf("%f", *((f32*)value)); break;
         case ValueTypeF64: printf("%f", *((f64*)value)); break;
 
+        case ValueTypeNull: printf("nil"); break;
         case ValueTypeStruct:
         case ValueTypeNone:
         case ValueTypeCount:

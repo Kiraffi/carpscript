@@ -150,6 +150,7 @@ InterpretResult runCode(Script& script)
         OpCodeType opCode = *ip++;
         switch(opCode)
         {
+            case OP_END_OF_FILE:
             case OP_RETURN:
             {
                 u64 value = stack.back();
@@ -159,9 +160,10 @@ InterpretResult runCode(Script& script)
                 stackValueInfo.pop_back();
 
                 printValue(&value, valueDesc.valueType);
-
+                printf("\n");
                 return InterpretResult_Ok;
             }
+            case OP_CONSTANT_BOOL:
             case OP_CONSTANT_I8:
             case OP_CONSTANT_U8:
             case OP_CONSTANT_I16:
@@ -183,6 +185,19 @@ InterpretResult runCode(Script& script)
                 //printf("\n");
                 break;
             }
+            case OP_NIL:
+                stackValueInfo.push_back(ValueTypeDesc{.valueType = ValueTypeNull});
+                stack.push_back(0);
+                break;
+            case OP_TRUE:
+                stackValueInfo.push_back(ValueTypeDesc{.valueType = ValueTypeBool});
+                stack.push_back(1);
+                break;
+            case OP_FALSE:
+                stackValueInfo.push_back(ValueTypeDesc{.valueType = ValueTypeBool});
+                stack.push_back(0);
+                break;
+
             case OP_NEGATE:
             {
                 ValueTypeDesc* desc;

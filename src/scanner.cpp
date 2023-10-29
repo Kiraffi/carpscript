@@ -177,7 +177,7 @@ static Token handleIdentifier(Scanner& scanner)
         advance(scanner);
     }
     i32 sz = getScannerCurrLenToStartToken(scanner);
-    const char* identifier = (const char*)&scanner.startToken;
+    const char* identifier = (const char*)scanner.startToken;
     for (const Keyword& word : keywords)
     {
         if (sz == word.len && strncmp(identifier, word.name, word.len) == 0)

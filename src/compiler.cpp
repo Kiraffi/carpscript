@@ -56,6 +56,7 @@ static void grouping(Parser& parser);
 static void unary(Parser& parser);
 static void binary(Parser& parser);
 static void number(Parser& parser);
+static void literal(Parser& parser);
 
 // C99 feature, not c++...
 //ParseRule rules[] =
@@ -134,15 +135,15 @@ static ParseRule getRule(TokenType type)
         case TokenType::AND:              return {NULL,     NULL,   PREC_NONE};   break;
         case TokenType::STRUCT:           return {NULL,     NULL,   PREC_NONE};   break;
         case TokenType::ELSE:             return {NULL,     NULL,   PREC_NONE};   break;
-        case TokenType::FALSE:            return {NULL,     NULL,   PREC_NONE};   break;
+        case TokenType::FALSE:            return {literal,  NULL,   PREC_NONE};   break;
         case TokenType::FOR:              return {NULL,     NULL,   PREC_NONE};   break;
         case TokenType::FN:               return {NULL,     NULL,   PREC_NONE};   break;
         case TokenType::IF:               return {NULL,     NULL,   PREC_NONE};   break;
-        case TokenType::NIL:              return {NULL,     NULL,   PREC_NONE};   break;
+        case TokenType::NIL:              return {literal,  NULL,   PREC_NONE};   break;
         case TokenType::OR:               return {NULL,     NULL,   PREC_NONE};   break;
         case TokenType::PRINT:            return {NULL,     NULL,   PREC_NONE};   break;
         case TokenType::RETURN:           return {NULL,     NULL,   PREC_NONE};   break;
-        case TokenType::TRUE:             return {NULL,     NULL,   PREC_NONE};   break;
+        case TokenType::TRUE:             return {literal,  NULL,   PREC_NONE};   break;
         case TokenType::WHILE:            return {NULL,     NULL,   PREC_NONE};   break;
         case TokenType::TOKEN_ERROR:      return {NULL,     NULL,   PREC_NONE};   break;
         case TokenType::END_OF_FILE:      return {NULL,     NULL,   PREC_NONE};   break;
@@ -243,7 +244,7 @@ static void number(Parser& parser)
         char* end;
         i32 value = (i32)strtol((const char*)parser.previous.start, &end, 10);
         addOpCode(parser.script, OP_CONSTANT_I32, parser.previous.line);
-        addConstant(parser.script, 0, value, parser.previous.line);
+        addConstant(parser.script, value, parser.previous.line);
 
     }
     else
@@ -251,10 +252,22 @@ static void number(Parser& parser)
         char* end;
         f32 value = strtof((const char*)parser.previous.start, &end);
         addOpCode(parser.script, OP_CONSTANT_F32, parser.previous.line);
-        addConstant(parser.script, 0, value, parser.previous.line);
+        addConstant(parser.script, value, parser.previous.line);
 
     }
 }
+
+static void literal(Parser& parser)
+{
+    switch(parser.previous.type)
+    {
+        case TokenType::FALSE: emitByteCode(parser, OP_FALSE); addConstant(parser.script, false, parser.previous.line); break;
+        case TokenType::TRUE:  emitByteCode(parser, OP_TRUE);  addConstant(parser.script, true, parser.previous.line); break;
+        case TokenType::NIL:   emitByteCode(parser, OP_NIL);   addConstant(parser.script, parser.previous.line); break;
+        default: return;
+    }
+}
+
 
 static void grouping(Parser& parser)
 {

@@ -28,6 +28,7 @@ struct Script
     // For example u8 = 0, u8 = 1, u32 = 4 for first 3.
     std::vector<i32> structValueMemoryPosition;
 
+    i32 structIndex;
     i32 currentStructValuePos;
 };
 
@@ -50,15 +51,17 @@ i32 addSymbolName(Script& script, const char* name);
 
 i32 addStruct(Script& script, const char* name);
 
-i32 addConstant(Script& script, i32 structIndex, i8 constantValue, i32 lineNumber);
-i32 addConstant(Script& script, i32 structIndex, u8 constantValue, i32 lineNumber);
-i32 addConstant(Script& script, i32 structIndex, i16 constantValue, i32 lineNumber);
-i32 addConstant(Script& script, i32 structIndex, u16 constantValue, i32 lineNumber);
-i32 addConstant(Script& script, i32 structIndex, i32 constantValue, i32 lineNumber);
-i32 addConstant(Script& script, i32 structIndex, u32 constantValue, i32 lineNumber);
-i32 addConstant(Script& script, i32 structIndex, i64 constantValue, i32 lineNumber);
-i32 addConstant(Script& script, i32 structIndex, u64 constantValue, i32 lineNumber);
-i32 addConstant(Script& script, i32 structIndex, f32 constantValue, i32 lineNumber);
-i32 addConstant(Script& script, i32 structIndex, f64 constantValue, i32 lineNumber);
+i32 addConstant(Script& script, i32 lineNumber);
+i32 addConstant(Script& script, bool constValue, i32 lineNumber);
+i32 addConstant(Script& script, i8 constantValue, i32 lineNumber);
+i32 addConstant(Script& script, u8 constantValue, i32 lineNumber);
+i32 addConstant(Script& script, i16 constantValue, i32 lineNumber);
+i32 addConstant(Script& script, u16 constantValue, i32 lineNumber);
+i32 addConstant(Script& script, i32 constantValue, i32 lineNumber);
+i32 addConstant(Script& script, u32 constantValue, i32 lineNumber);
+i32 addConstant(Script& script, i64 constantValue, i32 lineNumber);
+i32 addConstant(Script& script, u64 constantValue, i32 lineNumber);
+i32 addConstant(Script& script, f32 constantValue, i32 lineNumber);
+i32 addConstant(Script& script, f64 constantValue, i32 lineNumber);
 
 

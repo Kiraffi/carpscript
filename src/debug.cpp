@@ -51,12 +51,16 @@ i32 disassembleInstruction(const Script& script, i32 offset)
     const char* opName = getOpCodeName(opCode);
     switch(opCode)
     {
+        case OP_END_OF_FILE:
         case OP_RETURN:
         case OP_NEGATE:
         case OP_ADD:
         case OP_SUB:
         case OP_MUL:
         case OP_DIV:
+        case OP_NIL:
+        case OP_FALSE:
+        case OP_TRUE:
             return simpleOpCode(opName, offset);
 
         case OP_CONSTANT_BOOL:

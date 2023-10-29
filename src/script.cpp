@@ -77,48 +77,58 @@ i32 addStruct(Script& script, const char* name)
 {
     i32 index = (i32)script.structDescs.size();
     script.structDescs.emplace_back(StructDesc{});
+    script.structIndex = index;
     addSymbolName(script, name);
     return index;
 }
 
-i32 addConstant(Script& script, i32 structIndex, i8 constantValue, i32 lineNumber)
+i32 addConstant(Script& script, i32 lineNumber)
 {
-    return addConsantTemplate(script, structIndex, constantValue, ValueTypeI8, lineNumber);
+    return addConsantTemplate(script, script.structIndex, nullptr, ValueTypeNull, lineNumber);
 }
-i32 addConstant(Script& script, i32 structIndex, u8 constantValue, i32 lineNumber)
+
+i32 addConstant(Script& script, bool constantValue, i32 lineNumber)
 {
-    return addConsantTemplate(script, structIndex, constantValue, ValueTypeU8, lineNumber);
+    return addConsantTemplate(script, script.structIndex, constantValue, ValueTypeBool, lineNumber);
 }
-i32 addConstant(Script& script, i32 structIndex, i16 constantValue, i32 lineNumber)
+i32 addConstant(Script& script, i8 constantValue, i32 lineNumber)
 {
-    return addConsantTemplate(script, structIndex, constantValue, ValueTypeI16, lineNumber);
+    return addConsantTemplate(script, script.structIndex, constantValue, ValueTypeI8, lineNumber);
 }
-i32 addConstant(Script& script, i32 structIndex, u16 constantValue, i32 lineNumber)
+i32 addConstant(Script& script, u8 constantValue, i32 lineNumber)
 {
-    return addConsantTemplate(script, structIndex, constantValue, ValueTypeU16, lineNumber);
+    return addConsantTemplate(script, script.structIndex, constantValue, ValueTypeU8, lineNumber);
 }
-i32 addConstant(Script& script, i32 structIndex, i32 constantValue, i32 lineNumber)
+i32 addConstant(Script& script, i16 constantValue, i32 lineNumber)
 {
-    return addConsantTemplate(script, structIndex, constantValue, ValueTypeI32, lineNumber);
+    return addConsantTemplate(script, script.structIndex, constantValue, ValueTypeI16, lineNumber);
 }
-i32 addConstant(Script& script, i32 structIndex, u32 constantValue, i32 lineNumber)
+i32 addConstant(Script& script, u16 constantValue, i32 lineNumber)
 {
-    return addConsantTemplate(script, structIndex, constantValue, ValueTypeU32, lineNumber);
+    return addConsantTemplate(script, script.structIndex, constantValue, ValueTypeU16, lineNumber);
 }
-i32 addConstant(Script& script, i32 structIndex, i64 constantValue, i32 lineNumber)
+i32 addConstant(Script& script, i32 constantValue, i32 lineNumber)
 {
-    return addConsantTemplate(script, structIndex, constantValue, ValueTypeI64, lineNumber);
+    return addConsantTemplate(script, script.structIndex, constantValue, ValueTypeI32, lineNumber);
 }
-i32 addConstant(Script& script, i32 structIndex, u64 constantValue, i32 lineNumber)
+i32 addConstant(Script& script, u32 constantValue, i32 lineNumber)
 {
-    return addConsantTemplate(script, structIndex, constantValue, ValueTypeU16, lineNumber);
+    return addConsantTemplate(script, script.structIndex, constantValue, ValueTypeU32, lineNumber);
 }
-i32 addConstant(Script& script, i32 structIndex, f32 constantValue, i32 lineNumber)
+i32 addConstant(Script& script, i64 constantValue, i32 lineNumber)
 {
-    return addConsantTemplate(script, structIndex, constantValue, ValueTypeF32, lineNumber);
+    return addConsantTemplate(script, script.structIndex, constantValue, ValueTypeI64, lineNumber);
 }
-i32 addConstant(Script& script, i32 structIndex, f64 constantValue, i32 lineNumber)
+i32 addConstant(Script& script, u64 constantValue, i32 lineNumber)
 {
-    return addConsantTemplate(script, structIndex, constantValue, ValueTypeF64, lineNumber);
+    return addConsantTemplate(script, script.structIndex, constantValue, ValueTypeU16, lineNumber);
+}
+i32 addConstant(Script& script, f32 constantValue, i32 lineNumber)
+{
+    return addConsantTemplate(script, script.structIndex, constantValue, ValueTypeF32, lineNumber);
+}
+i32 addConstant(Script& script, f64 constantValue, i32 lineNumber)
+{
+    return addConsantTemplate(script, script.structIndex, constantValue, ValueTypeF64, lineNumber);
 }
 

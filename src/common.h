@@ -14,6 +14,7 @@
 enum ValueType: u8
 {
     ValueTypeNone,
+    ValueTypeNull,
 
     ValueTypeBool,
     ValueTypeI8,
