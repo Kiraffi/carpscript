@@ -1,5 +1,6 @@
 #pragma once
 
+struct MyMemory;
 struct Script;
 
 
@@ -13,4 +14,4 @@ enum InterpretResult
 };
 
 
-InterpretResult interpret(Script& script);
+InterpretResult interpret(MyMemory& mem, Script& script);

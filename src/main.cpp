@@ -3,11 +3,10 @@
 
 #include <vector>
 
-#include "compiler.h"
 #include "error.h"
 #include "mymemory.h"
 #include "mytypes.h"
-#include "token.h"
+#include "vm.h"
 
 
 static bool runFile(const char* filename)
@@ -39,11 +38,17 @@ static bool runFile(const char* filename)
     mem.scriptFile[sz] = '\0';
     fclose(file);
 
-    if(!compile(mem, script))
+    InterpretResult result = interpret(mem, script);
+
+    switch(result)
     {
-        printf("Failed to compile: %s\n", filename);
+        case InterpretResult_CompileError:
+            printf("Failed to compile: %s\n", filename);
+            break;
+        case InterpretResult_Ok:
+        default:
+            break;
     }
-    else
     {
         /*
         // printf("%s\n", mem.scriptFileData.data());

@@ -31,6 +31,17 @@ struct Script
     i32 currentStructValuePos;
 };
 
+//template<typename T>
+//void writeBytes(Script& script, T data, i32 lineNumber)
+//{
+//    const u8* datePtr = (const u8*)&data;
+//    const u8* dataPtrEnd = datePtr + sizeof(T);
+//
+//    script.byteCode.insert(script.byteCode.end(), datePtr, dataPtrEnd);
+//    script.byteCodeLines.insert(script.byteCodeLines.end(), sizeof(T), lineNumber);
+//}
+
+
 void updateCurrentStructValuePos(Script& script, i32 increment);
 
 i32 addOpCode(Script& script, Op op, i32 lineNumber);

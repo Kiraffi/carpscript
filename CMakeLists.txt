@@ -19,4 +19,5 @@ add_executable(carpscript src/main.cpp
         src/token.h
         src/vm.cpp
         src/vm.h
+        src/scanner.cpp
 )

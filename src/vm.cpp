@@ -1,6 +1,8 @@
 #include "vm.h"
 
+#include "compiler.h"
 #include "debug.h"
+#include "mymemory.h"
 #include "op.h"
 #include "script.h"
 
@@ -80,7 +82,7 @@ static bool doBinaryOp(
     return true;
 }
 
-InterpretResult interpret(Script& script)
+static InterpretResult runCode(Script& script)
 {
     const OpCodeType* ipStart = (const OpCodeType*) script.byteCode.data();
     const OpCodeType* ip = ipStart;
@@ -158,3 +160,13 @@ InterpretResult interpret(Script& script)
     }
 }
 
+
+InterpretResult interpret(MyMemory& mem, Script& script)
+{
+    if(!compile(mem, script))
+    {
+        return InterpretResult_CompileError;
+    }
+
+    return runCode(script);
+}

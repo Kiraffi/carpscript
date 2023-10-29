@@ -2,6 +2,8 @@
 
 #include "mymemory.h"
 
+struct Token;
+
 struct Scanner
 {
     MyMemory& mem;
@@ -13,3 +15,5 @@ struct Scanner
     i32 line;
     bool hasErrors;
 };
+
+Token scanToken(Scanner& scanner);

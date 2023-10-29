@@ -72,15 +72,6 @@ struct ValueTypeDesc
 };
 
 
-struct Parser
-{
-    std::vector<u8> code;
-    std::vector<Token> tokens;
-    u32 position;
-    u32 line;
-    u32 lineStart;
-};
-
 // Using linear memory, for example 12 functions before needed 47 parameters,
 // parameterMemoryOffset = 47 and parametersCount could be 2.
 // Next function would start with offset of 49.
