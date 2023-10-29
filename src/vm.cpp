@@ -118,49 +118,66 @@ static StackType doBinaryOpOp(const StackType l, const StackType r, OpCodeType o
         case OP_SUB: value = lt - rt; break;
         case OP_MUL: value = lt * rt; break;
         case OP_DIV: value = lt / rt; break;
+
+        case OP_GREATER: value = lt > rt; break;
+        case OP_LESSER: value = lt < rt; break;
         default: break;
     }
     return value;
 }
 
-static bool doBinaryOp(
+static i32 doBinaryOp(
     std::vector<StackType>& stack,
     std::vector<ValueTypeDesc>& stackValueInfo,
     OpCodeType opCode)
 {
-    StackType value2 = stack.back();
-    stack.pop_back();
-    StackType value = stack.back();
-    stack.pop_back();
 
-    ValueTypeDesc valueDesc2 = stackValueInfo.back();
-    stackValueInfo.pop_back();
-    ValueTypeDesc valueDesc = stackValueInfo.back();
-    assert(valueDesc.valueType == valueDesc2.valueType);
-    if(valueDesc.valueType != valueDesc2.valueType)
+    HelperStruct values = valuesEqualHelper(stack, stackValueInfo);
+
+    assert(values.descA.valueType == values.descB.valueType);
+    if(values.descA.valueType != values.descB.valueType)
     {
-        return false;
+        return 1;
     }
     StackType finalValue;
-    switch(valueDesc.valueType)
+    ValueTypeDesc newDesc = values.descA;
+    switch(values.descA.valueType)
     {
-        case ValueTypeI8: finalValue = doBinaryOpOp<i8>(value, value2, opCode); break;
-        case ValueTypeU8: finalValue = doBinaryOpOp<u8>(value, value2, opCode); break;
-        case ValueTypeI16: finalValue = doBinaryOpOp<i16>(value, value2, opCode); break;
-        case ValueTypeU16: finalValue = doBinaryOpOp<u16>(value, value2, opCode); break;
-        case ValueTypeI32: finalValue = doBinaryOpOp<i32>(value, value2, opCode); break;
-        case ValueTypeU32: finalValue = doBinaryOpOp<u32>(value, value2, opCode); break;
-        case ValueTypeI64: finalValue = doBinaryOpOp<i64>(value, value2, opCode); break;
-        case ValueTypeU64: finalValue = doBinaryOpOp<u64>(value, value2, opCode); break;
-        case ValueTypeF32: finalValue = doBinaryOpOp<f32>(value, value2, opCode); break;
-        case ValueTypeF64: finalValue = doBinaryOpOp<f64>(value, value2, opCode); break;
+        case ValueTypeI8: finalValue = doBinaryOpOp<i8>(values.valueA, values.valueB, opCode); break;
+        case ValueTypeU8: finalValue = doBinaryOpOp<u8>(values.valueA, values.valueB, opCode); break;
+        case ValueTypeI16: finalValue = doBinaryOpOp<i16>(values.valueA, values.valueB, opCode); break;
+        case ValueTypeU16: finalValue = doBinaryOpOp<u16>(values.valueA, values.valueB, opCode); break;
+        case ValueTypeI32: finalValue = doBinaryOpOp<i32>(values.valueA, values.valueB, opCode); break;
+        case ValueTypeU32: finalValue = doBinaryOpOp<u32>(values.valueA, values.valueB, opCode); break;
+        case ValueTypeI64: finalValue = doBinaryOpOp<i64>(values.valueA, values.valueB, opCode); break;
+        case ValueTypeU64: finalValue = doBinaryOpOp<u64>(values.valueA, values.valueB, opCode); break;
+        case ValueTypeF32: finalValue = doBinaryOpOp<f32>(values.valueA, values.valueB, opCode); break;
+        case ValueTypeF64: finalValue = doBinaryOpOp<f64>(values.valueA, values.valueB, opCode); break;
         default:
+        {
             assert(false);
-            return false;
+            return 2;
+        }
     }
+    switch(opCode)
+    {
+        case OP_ADD:
+        case OP_SUB:
+        case OP_MUL:
+        case OP_DIV:
+            stackValueInfo.emplace_back(values.descA);
+            break;
+        case OP_GREATER:
+        case OP_LESSER:
+            stackValueInfo.push_back({.valueType = ValueTypeBool});
+            break;
+        default:
+            return 3;
 
+    }
     stack.push_back(finalValue);
-    return true;
+
+    return 0;
 }
 
 InterpretResult runCode(Script& script)
@@ -177,12 +194,19 @@ InterpretResult runCode(Script& script)
     stack.reserve(1024 * 1024);
     stackValueInfo.reserve(1024 * 1024);
 
+    VMRuntime vmRuntimeError = {
+        .stack = stack,
+        .codeStart = ipStart,
+        .ip = ip,
+        .lines = lines,
+    };
     while(true)
     {
         #if DEBUG_TRACE_EXEC
             disassembleInstruction(script, i32(intptr_t(ip) - intptr_t(ipStart)) / OpCodeTypeSize);
         #endif
         OpCodeType opCode = *ip++;
+        vmRuntimeError.ip = ip;
         switch(opCode)
         {
             case OP_END_OF_FILE:
@@ -215,9 +239,6 @@ InterpretResult runCode(Script& script)
                 stack.push_back(*value);
                 ValueType type = ValueType((opCode & 0xf) + ValueTypeBool);
                 stackValueInfo.push_back(ValueTypeDesc{.valueType = type });
-
-                //printValue(value, ValueType((opCode & 0xf) + ValueTypeBool));
-                //printf("\n");
                 break;
             }
             case OP_NOT:
@@ -241,17 +262,12 @@ InterpretResult runCode(Script& script)
                 valuesEqual(stack, stackValueInfo);
                 break;
             }
-            case OP_GREATER:
-            {
-
-            }
             case OP_NEGATE:
             {
                 ValueTypeDesc* desc;
                 if(!peek(stackValueInfo, 0, &desc))
                 {
-                    runtimeError(VMRuntime{.stack = stack, .codeStart = ipStart, .ip = ip,
-                                           .lines = lines, },
+                    runtimeError(vmRuntimeError,
                                  "Trying to peek stack that does not have enough indices: %i", 0);
                     return InterpretResult_RuntimeError;
                 }
@@ -279,8 +295,38 @@ InterpretResult runCode(Script& script)
             case OP_SUB:
             case OP_MUL:
             case OP_DIV:
+            case OP_GREATER:
+            case OP_LESSER:
             {
-                doBinaryOp(stack, stackValueInfo, opCode);
+                ValueTypeDesc* descA;
+                ValueTypeDesc* descB;
+                if(!peek(stackValueInfo, 0, &descA) || !peek(stackValueInfo, 1, &descB))
+                {
+                    runtimeError(vmRuntimeError,
+                                 "Trying to peek stack that does not have enough indices: %i", 1);
+                    return InterpretResult_RuntimeError;
+                }
+
+
+                i32 result = doBinaryOp(stack, stackValueInfo, opCode);
+                if(result != 0)
+                {
+                    switch(result)
+                    {
+                        case 1:
+                            runtimeError(vmRuntimeError, "Mismatching types on binary op: %i vs %i!",
+                                descA->valueType, descB->valueType);
+                            break;
+                        case 2:
+                            runtimeError(vmRuntimeError, "Valuetype on binary op not a number: %i!",
+                                descA->valueType);
+                            break;
+                        case 3:
+                            runtimeError(vmRuntimeError, "Not valid binary op: %i!", opCode);
+                            break;
+                    }
+                    return InterpretResult_RuntimeError;
+                }
                 break;
             }
             default:
