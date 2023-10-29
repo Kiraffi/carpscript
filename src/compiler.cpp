@@ -130,6 +130,7 @@ static ParseRule getRule(TokenType type)
         case TokenType::IDENTIFIER:       return {NULL,     NULL,   PREC_NONE};   break;
         case TokenType::STRING:           return {NULL,     NULL,   PREC_NONE};   break;
         case TokenType::NUMBER:           return {number,   NULL,   PREC_NONE};   break;
+        case TokenType::INTEGER:          return {number,   NULL,   PREC_NONE};   break;
         case TokenType::AND:              return {NULL,     NULL,   PREC_NONE};   break;
         case TokenType::STRUCT:           return {NULL,     NULL,   PREC_NONE};   break;
         case TokenType::ELSE:             return {NULL,     NULL,   PREC_NONE};   break;
@@ -237,7 +238,7 @@ static void endCompiler(Parser& parser)
 
 static void number(Parser& parser)
 {
-    if(parser.current.type == TokenType::INTEGER)
+    if(parser.previous.type == TokenType::INTEGER)
     {
         char* end;
         i32 value = (i32)strtol((const char*)parser.previous.start, &end, 10);
