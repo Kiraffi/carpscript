@@ -7,8 +7,43 @@
 #include "script.h"
 
 #include <assert.h>
+#include <stdarg.h> // va_start
 #include <string.h> // memcpy
 
+using StackType = u64;
+
+struct VMRuntime
+{
+    std::vector<StackType> &stack;
+    const OpCodeType *codeStart;
+    const OpCodeType *ip;
+    const i32* lines;
+    i32 line;
+};
+
+static i32 getInstructionIndex(const OpCodeType* current, const OpCodeType* start)
+{
+    return i32(intptr_t(current) - intptr_t(start)) / OpCodeTypeSize;
+}
+
+static void resetStack(std::vector<StackType> &stack)
+{
+    stack.clear();
+}
+
+static void runtimeError(VMRuntime runtime, const char* fmt, ...)
+{
+    va_list args;
+    va_start(args, fmt);
+    vfprintf(stderr, fmt, args);
+    va_end(args);
+    fputs("\n", stderr);
+
+    size_t inst = getInstructionIndex(runtime.ip, runtime.codeStart) - 1;
+    int line = runtime.lines[runtime.line];
+    fprintf(stderr, "[Line %d] in script\n", line);
+    resetStack(runtime.stack);
+}
 
 template <typename T>
 static T readConstant(const OpCodeType* ip, const Script& script)
@@ -22,13 +57,25 @@ static T handleConstant(T value)
 
 }
 
+
+static bool peek(std::vector<ValueTypeDesc>& descs, int distance, ValueTypeDesc* outDesc)
+{
+    if(distance >= descs.size())
+    {
+        outDesc = nullptr;
+        return false;
+    }
+    outDesc = &descs[descs.size() - distance - 1];
+    return true;
+}
+
 template <typename T>
-static u64 doBinaryOpOp(const u64 l, const u64 r, OpCodeType opCode)
+static StackType doBinaryOpOp(const StackType l, const StackType r, OpCodeType opCode)
 {
     const T& lt = *((const T*)&l);
     const T& rt = *((const T*)&r);
-    u64 value64 = 0;
-    T& value = *((T*)&value64);
+    StackType valueStackType = 0;
+    T& value = *((T*)&valueStackType);
 
     switch(opCode)
     {
@@ -42,13 +89,13 @@ static u64 doBinaryOpOp(const u64 l, const u64 r, OpCodeType opCode)
 }
 
 static bool doBinaryOp(
-    std::vector<u64>& stack,
+    std::vector<StackType>& stack,
     std::vector<ValueTypeDesc>& stackValueInfo,
     OpCodeType opCode)
 {
-    u64 value2 = stack.back();
+    StackType value2 = stack.back();
     stack.pop_back();
-    u64 value = stack.back();
+    StackType value = stack.back();
     stack.pop_back();
 
     ValueTypeDesc valueDesc2 = stackValueInfo.back();
@@ -85,6 +132,8 @@ InterpretResult runCode(Script& script)
 {
     const OpCodeType* ipStart = (const OpCodeType*) script.byteCode.data();
     const OpCodeType* ip = ipStart;
+
+    const i32* lines = script.byteCodeLines.data();
 
     // Does stack need type info stack?
     u32 stackIndex = 0;
@@ -136,10 +185,25 @@ InterpretResult runCode(Script& script)
             }
             case OP_NEGATE:
             {
-                u64 value = stack.back();
-                stack.pop_back();
-                stack.push_back(-value);
-                break;
+                ValueTypeDesc* desc;
+                if(!peek(stackValueInfo, 0, desc))
+                {
+                    runtimeError(VMRuntime{.stack = stack, .codeStart = ipStart, .ip = ip,
+                                           .lines = lines, },
+                                 "Trying to peek stack that does not have enough indices: %i", 0);
+                    return InterpretResult_RuntimeError;
+                }
+                if(desc->valueType >= ValueTypeI8 && desc->valueType <= ValueTypeF64)
+                {
+                    u64 value = stack.back();
+                    stack.pop_back();
+                    stack.push_back(-value);
+                    break;
+                }
+                else
+                {
+                    return InterpretResult_RuntimeError;
+                }
             }
             case OP_ADD:
             case OP_SUB:
