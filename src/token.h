@@ -17,7 +17,7 @@ enum class TokenType: u8
     LESSER, LESSER_EQUAL,
 
     // Literals
-    IDENTIFIER, LITERAL_BOOL, LITERAL_STRING, NUMBER,
+    IDENTIFIER, LITERAL_BOOL, LITERAL_STRING, NUMBER, INTEGER,
 
     // Keywords
     I8, I16, I32, I64, U8, U16, U32, U64, F32, F64,
@@ -46,7 +46,7 @@ static const char* TOKEN_NAMES[] = {
     "LESSER", "LESSER_EQUAL",
 
     // Literals
-    "IDENTIFIER", "LITERAL_BOOL", "LITERAL_STRING", "NUMBER",
+    "IDENTIFIER", "LITERAL_BOOL", "LITERAL_STRING", "NUMBER", "INTEGER",
 
     // Keywords
     "I8", "I16", "I32", "I64", "U8", "U16", "U32", "U64", "F32", "F64",

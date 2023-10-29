@@ -13,5 +13,5 @@ enum InterpretResult
     InterpretResult_Count,
 };
 
-
+InterpretResult runCode(Script& script);
 InterpretResult interpret(MyMemory& mem, Script& script);

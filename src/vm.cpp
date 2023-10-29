@@ -8,7 +8,6 @@
 
 #include <assert.h>
 #include <string.h> // memcpy
-#define DEBUG_TRACE_EXEC 1
 
 
 template <typename T>
@@ -82,7 +81,7 @@ static bool doBinaryOp(
     return true;
 }
 
-static InterpretResult runCode(Script& script)
+InterpretResult runCode(Script& script)
 {
     const OpCodeType* ipStart = (const OpCodeType*) script.byteCode.data();
     const OpCodeType* ip = ipStart;

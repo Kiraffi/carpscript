@@ -20,4 +20,6 @@ add_executable(carpscript src/main.cpp
         src/vm.cpp
         src/vm.h
         src/scanner.cpp
+
+        src/main_old.cpp
 )

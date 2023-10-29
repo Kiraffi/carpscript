@@ -7,6 +7,9 @@
 #include <vector>
 
 
+#define DEBUG_PRINT_CODE 1
+#define DEBUG_TRACE_EXEC 1
+
 
 enum ValueType: u8
 {

@@ -6,7 +6,7 @@
 #include "script.h"
 #include "vm.h"
 
-int oldmain()
+int mainold()
 {
     MyMemory mem;
     Script& script = mem.scripts[addNewScript(mem)];
@@ -53,7 +53,7 @@ int oldmain()
 
     disassembleCode(script, "test op");
 
-    interpret(script);
+    runCode(script);
 
     return 0;
 }

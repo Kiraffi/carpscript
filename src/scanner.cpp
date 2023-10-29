@@ -113,6 +113,7 @@ static void skipWhiteSpace(Scanner& scanner)
             case '\t':
             case '\r':
             case ' ':
+                advance(scanner);
                 break;
             case '\n':
                 scanner.line++;
@@ -161,6 +162,10 @@ static Token handleNumberString(Scanner& scanner)
         {
             advance(scanner);
         }
+    }
+    else
+    {
+        return makeToken(scanner, TokenType::INTEGER);
     }
     return makeToken(scanner, TokenType::NUMBER);
 }
