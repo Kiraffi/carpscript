@@ -33,6 +33,29 @@ enum ValueType: u8
     ValueTypeCount,
 };
 
+static const char* ValueTypeNames[] =
+{
+    "ValueTypeNone",
+    "ValueTypeNull",
+
+    "ValueTypeBool",
+    "ValueTypeI8",
+    "ValueTypeU8",
+    "ValueTypeI16",
+    "ValueTypeU16",
+    "ValueTypeI32",
+    "ValueTypeU32",
+    "ValueTypeI64",
+    "ValueTypeU64",
+    "ValueTypeF32",
+    "ValueTypeF64",
+
+    "ValueTypeStruct",
+
+    "ValueTypeCount",
+
+};
+
 constexpr i32 getValueTypeSizeInBytes(ValueType type)
 {
     switch(type)

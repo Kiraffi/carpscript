@@ -25,6 +25,7 @@ struct Parser
 };
 
 
+
 enum Precedence
 {
     PREC_NONE,
@@ -102,6 +103,10 @@ static void literal(Parser& parser);
 
 
 
+i32 addOpCode(Parser& parser, Op op)
+{
+    return addOpCode(parser.script, op, parser.previous.line);
+}
 
 static ParseRule getRule(TokenType type)
 {
@@ -243,7 +248,7 @@ static void number(Parser& parser)
     {
         char* end;
         i32 value = (i32)strtol((const char*)parser.previous.start, &end, 10);
-        addOpCode(parser.script, OP_CONSTANT_I32, parser.previous.line);
+        emitByteCode(parser, OP_CONSTANT_I32);
         addConstant(parser.script, value, parser.previous.line);
 
     }
@@ -251,7 +256,7 @@ static void number(Parser& parser)
     {
         char* end;
         f32 value = strtof((const char*)parser.previous.start, &end);
-        addOpCode(parser.script, OP_CONSTANT_F32, parser.previous.line);
+        emitByteCode(parser, OP_CONSTANT_F32);
         addConstant(parser.script, value, parser.previous.line);
 
     }
@@ -261,9 +266,9 @@ static void literal(Parser& parser)
 {
     switch(parser.previous.type)
     {
-        case TokenType::FALSE: emitByteCode(parser, OP_FALSE); addConstant(parser.script, false, parser.previous.line); break;
-        case TokenType::TRUE:  emitByteCode(parser, OP_TRUE);  addConstant(parser.script, true, parser.previous.line); break;
-        case TokenType::NIL:   emitByteCode(parser, OP_NIL);   addConstant(parser.script, parser.previous.line); break;
+        case TokenType::FALSE: emitByteCode(parser, OP_CONSTANT_BOOL);  addConstant(parser.script, false, parser.previous.line); break;
+        case TokenType::TRUE:  emitByteCode(parser, OP_CONSTANT_BOOL);  addConstant(parser.script, true, parser.previous.line); break;
+        case TokenType::NIL:   emitByteCode(parser, OP_NIL);            addConstant(parser.script, parser.previous.line); break;
         default: return;
     }
 }

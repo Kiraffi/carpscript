@@ -58,14 +58,14 @@ static T handleConstant(T value)
 }
 
 
-static bool peek(std::vector<ValueTypeDesc>& descs, int distance, ValueTypeDesc* outDesc)
+static bool peek(std::vector<ValueTypeDesc>& descs, int distance, ValueTypeDesc** outDesc)
 {
     if(distance >= descs.size())
     {
         outDesc = nullptr;
         return false;
     }
-    outDesc = &descs[descs.size() - distance - 1];
+    *outDesc = &descs[descs.size() - distance - 1];
     return true;
 }
 
@@ -189,19 +189,11 @@ InterpretResult runCode(Script& script)
                 stackValueInfo.push_back(ValueTypeDesc{.valueType = ValueTypeNull});
                 stack.push_back(0);
                 break;
-            case OP_TRUE:
-                stackValueInfo.push_back(ValueTypeDesc{.valueType = ValueTypeBool});
-                stack.push_back(1);
-                break;
-            case OP_FALSE:
-                stackValueInfo.push_back(ValueTypeDesc{.valueType = ValueTypeBool});
-                stack.push_back(0);
-                break;
 
             case OP_NEGATE:
             {
                 ValueTypeDesc* desc;
-                if(!peek(stackValueInfo, 0, desc))
+                if(!peek(stackValueInfo, 0, &desc))
                 {
                     runtimeError(VMRuntime{.stack = stack, .codeStart = ipStart, .ip = ip,
                                            .lines = lines, },
@@ -217,6 +209,14 @@ InterpretResult runCode(Script& script)
                 }
                 else
                 {
+                    const char* valueTypeName = "Unknown value type";
+                    if(desc->valueType >= 0 && desc->valueType < ValueType::ValueTypeCount)
+                    {
+                        valueTypeName = ValueTypeNames[desc->valueType];
+                    }
+                    runtimeError(VMRuntime{.stack = stack, .codeStart = ipStart, .ip = ip,
+                                     .lines = lines, },
+                                 "Cannot negate the type: %i: %s", desc->valueType, valueTypeName);
                     return InterpretResult_RuntimeError;
                 }
             }
