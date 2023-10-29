@@ -340,26 +340,4 @@ bool compile(MyMemory& mem, Script& script)
     consume(parser, TokenType::END_OF_FILE, "Expect end of expression.");
 
     return !parser.hadError;
-/*
-    int line = -1;
-
-    while(true)
-    {
-        Token token = scanToken(scanner);
-        if (token.line != line)
-        {
-            printf("%4d ", token.line);
-            line = token.line;
-        }
-        else
-        {
-            printf("   | ");
-        }
-        printf("%2d '%.*s'\n", (i32)token.type, token.len, token.start);
-
-        if (token.type == TokenType::END_OF_FILE)
-            break;
-    }
-    */
-
 }
