@@ -132,3 +132,12 @@ i32 addConstant(Script& script, f64 constantValue, i32 lineNumber)
     return addConsantTemplate(script, script.structIndex, constantValue, ValueTypeF64, lineNumber);
 }
 
+
+i32 addConstantString(Script& script, const std::string& str, i32 lineNumber)
+{
+    i32 stringIndex = script.stringLiterals.size();
+    script.stringLiterals.push_back(str);
+    i32 index = addConsantTemplate(script, script.structIndex, stringIndex, ValueTypeString, lineNumber);
+    return index;
+
+}

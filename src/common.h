@@ -10,6 +10,7 @@
 #define DEBUG_PRINT_CODE 1
 #define DEBUG_TRACE_EXEC 1
 
+struct Script;
 
 enum ValueType: u8
 {
@@ -29,6 +30,7 @@ enum ValueType: u8
     ValueTypeF64,
 
     ValueTypeStruct,
+    ValueTypeString,
 
     ValueTypeCount,
 };
@@ -120,4 +122,4 @@ struct StructDesc
     u32 structSize;
 };
 
-void printValue(const u64* value, ValueType type);
+void printValue(const Script& script, const u64* value, ValueType type);

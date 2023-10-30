@@ -48,11 +48,18 @@ static HelperStruct valuesEqualHelper(std::vector<StackType>& stack, std::vector
     return result;
 }
 
-static bool valuesEqual(std::vector<StackType>& stack, std::vector<ValueTypeDesc> &stackValueInfo)
+static bool valuesEqual(Script& script, std::vector<StackType>& stack, std::vector<ValueTypeDesc> &stackValueInfo)
 {
     HelperStruct s = valuesEqualHelper(stack, stackValueInfo);
     bool isTrue = s.descB.valueType == s.descA.valueType;
-    stack.push_back((isTrue && s.valueA == s.valueB) ? ~(0) : 0);
+    bool equal = isTrue && s.valueA == s.valueB;
+    if(isTrue && s.descA.valueType == ValueTypeString)
+    {
+        equal = script.stackStrings[s.valueA] == script.stackStrings[s.valueB];
+        script.stackStrings.pop_back();
+        script.stackStrings.pop_back();
+    }
+    stack.push_back((equal) ? ~(0) : 0);
     stackValueInfo.push_back({.valueType = ValueTypeBool});
 }
 
@@ -218,7 +225,7 @@ InterpretResult runCode(Script& script)
                 ValueTypeDesc valueDesc = stackValueInfo.back();
                 stackValueInfo.pop_back();
 
-                printValue(&value, valueDesc.valueType);
+                printValue(script, &value, valueDesc.valueType);
                 printf("\n");
                 return InterpretResult_Ok;
             }
@@ -251,6 +258,21 @@ InterpretResult runCode(Script& script)
                 stackValueInfo.push_back({.valueType = ValueTypeBool});
                 break;
             }
+            case OP_CONSTANT_STRING:
+            {
+                u16 lookupIndex = *ip++;
+                StackType value = script.structValueArray[lookupIndex];
+
+                const std::string& s = script.stringLiterals[value];
+
+                i32 index = script.stackStrings.size();
+                stack.push_back(index);
+
+                script.stackStrings.push_back(s);
+
+                stackValueInfo.push_back(ValueTypeDesc{.valueType = ValueTypeString});
+                break;
+            }
             case OP_NIL:
             {
                 stackValueInfo.push_back(ValueTypeDesc{.valueType = ValueTypeNull});
@@ -259,7 +281,7 @@ InterpretResult runCode(Script& script)
             }
             case OP_EQUAL:
             {
-                valuesEqual(stack, stackValueInfo);
+                valuesEqual(script, stack, stackValueInfo);
                 break;
             }
             case OP_NEGATE:
@@ -306,26 +328,43 @@ InterpretResult runCode(Script& script)
                                  "Trying to peek stack that does not have enough indices: %i", 1);
                     return InterpretResult_RuntimeError;
                 }
-
-
-                i32 result = doBinaryOp(stack, stackValueInfo, opCode);
-                if(result != 0)
+                if(opCode == OP_ADD && descA->valueType == ValueTypeString)
                 {
-                    switch(result)
+                    HelperStruct values = valuesEqualHelper(stack, stackValueInfo);
+                    const std::string a = script.stackStrings[values.valueA];
+                    const std::string b = script.stackStrings[values.valueB];
+
+                    script.stackStrings.pop_back();
+                    script.stackStrings.pop_back();
+
+                    i32 newIndex = (i32)script.stackStrings.size();
+                    script.stackStrings.push_back(a + b);
+
+                    stack.push_back(newIndex);
+                    stackValueInfo.push_back(ValueTypeDesc{.valueType = ValueTypeString});
+
+                }
+                else
+                {
+                    i32 result = doBinaryOp(stack, stackValueInfo, opCode);
+                    if (result != 0)
                     {
-                        case 1:
-                            runtimeError(vmRuntimeError, "Mismatching types on binary op: %i vs %i!",
-                                descA->valueType, descB->valueType);
-                            break;
-                        case 2:
-                            runtimeError(vmRuntimeError, "Valuetype on binary op not a number: %i!",
-                                descA->valueType);
-                            break;
-                        case 3:
-                            runtimeError(vmRuntimeError, "Not valid binary op: %i!", opCode);
-                            break;
+                        switch (result)
+                        {
+                            case 1:
+                                runtimeError(vmRuntimeError, "Mismatching types on binary op: %i vs %i!",
+                                             descA->valueType, descB->valueType);
+                                break;
+                            case 2:
+                                runtimeError(vmRuntimeError, "Valuetype on binary op not a number: %i!",
+                                             descA->valueType);
+                                break;
+                            case 3:
+                                runtimeError(vmRuntimeError, "Not valid binary op: %i!", opCode);
+                                break;
+                        }
+                        return InterpretResult_RuntimeError;
                     }
-                    return InterpretResult_RuntimeError;
                 }
                 break;
             }

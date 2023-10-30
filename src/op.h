@@ -25,6 +25,7 @@ enum Op : OpCodeType
     OP_LESSER,
     OP_EQUAL,
 
+    OP_CONSTANT_STRING,
 
     OP_CONSTANT_BOOL = 0x100,
     OP_CONSTANT_I8,
@@ -60,6 +61,8 @@ static const char* getOpCodeName(OpCodeType type)
         case OP_GREATER: return "OP_GREATER";
         case OP_LESSER: return "OP_LESSER";
         case OP_EQUAL: return "OP_EQUAL";
+
+        case OP_CONSTANT_STRING: return "OP_CONSTANT_STRING";
 
 
         case OP_CONSTANT_BOOL: return "OP_CONSTANT_BOOL";

@@ -1,9 +1,11 @@
 #include "common.h"
 
+#include "script.h"
+
 #include <inttypes.h>
 #include <stdio.h>
 
-void printValue(const u64* value, ValueType type)
+void printValue(const Script& script, const u64* value, ValueType type)
 {
     switch(type)
     {
@@ -18,6 +20,8 @@ void printValue(const u64* value, ValueType type)
         case ValueTypeU64: printf("%" PRIu64, *((u64*)value)); break;
         case ValueTypeF32: printf("%f", *((f32*)value)); break;
         case ValueTypeF64: printf("%f", *((f64*)value)); break;
+
+        case ValueTypeString: printf("%s", script.stackStrings[*value].c_str()); break;
 
         case ValueTypeNull: printf("nil"); break;
         case ValueTypeStruct:

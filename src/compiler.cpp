@@ -58,6 +58,7 @@ static void unary(Parser& parser);
 static void binary(Parser& parser);
 static void number(Parser& parser);
 static void literal(Parser& parser);
+static void string(Parser& parser);
 
 // C99 feature, not c++...
 //ParseRule rules[] =
@@ -134,7 +135,7 @@ static ParseRule getRule(TokenType type)
         case TokenType::LESSER:           return {NULL,     binary, PREC_COMPARISON};   break;
         case TokenType::LESSER_EQUAL:     return {NULL,     binary, PREC_COMPARISON};   break;
         case TokenType::IDENTIFIER:       return {NULL,     NULL,   PREC_NONE};         break;
-        case TokenType::STRING:           return {NULL,     NULL,   PREC_NONE};         break;
+        case TokenType::LITERAL_STRING:   return {string,   NULL,   PREC_NONE};         break;
         case TokenType::NUMBER:           return {number,   NULL,   PREC_NONE};         break;
         case TokenType::INTEGER:          return {number,   NULL,   PREC_NONE};         break;
         case TokenType::AND:              return {NULL,     NULL,   PREC_NONE};         break;
@@ -271,6 +272,14 @@ static void literal(Parser& parser)
         case TokenType::NIL:   emitByteCode(parser, OP_NIL); break;
         default: return;
     }
+}
+static void string(Parser& parser)
+{
+
+    std::string s = std::string((const char*)parser.previous.start + 1, parser.previous.len - 2);
+
+    emitByteCode(parser, OP_CONSTANT_STRING);
+    addConstantString(parser.script, s, parser.previous.line);
 }
 
 
