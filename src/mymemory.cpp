@@ -7,6 +7,6 @@ i32 addNewScript(MyMemory& mem)
     mem.scripts.emplace_back(s);
     Script& script = mem.scripts[index];
     script.allSymbolNames.emplace_back("constant");
-    addStruct(script, "global");
+    addStruct(script, "global", -1);
     return index;
 }

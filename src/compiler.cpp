@@ -59,50 +59,26 @@ static void binary(Parser& parser);
 static void number(Parser& parser);
 static void literal(Parser& parser);
 static void string(Parser& parser);
+static void variable(Parser& parser);
 
-// C99 feature, not c++...
-//ParseRule rules[] =
-//{
-//    [LEFT_PAREN]    = {grouping, NULL,   PREC_NONE},
-//    [RIGHT_PAREN]   = {NULL,     NULL,   PREC_NONE},
-//    [LEFT_BRACE]    = {NULL,     NULL,   PREC_NONE},
-//    [RIGHT_BRACE]   = {NULL,     NULL,   PREC_NONE},
-//    [COMMA]         = {NULL,     NULL,   PREC_NONE},
-//    [DOT]           = {NULL,     NULL,   PREC_NONE},
-//    [MINUS]         = {unary,    binary, PREC_TERM},
-//    [PLUS]          = {NULL,     binary, PREC_TERM},
-//    [SEMICOLON]     = {NULL,     NULL,   PREC_NONE},
-//    [SLASH]         = {NULL,     binary, PREC_FACTOR},
-//    [STAR]          = {NULL,     binary, PREC_FACTOR},
-//    [BANG]          = {NULL,     NULL,   PREC_NONE},
-//    [BANG_EQUAL]    = {NULL,     NULL,   PREC_NONE},
-//    [EQUAL]         = {NULL,     NULL,   PREC_NONE},
-//    [EQUAL_EQUAL]   = {NULL,     NULL,   PREC_NONE},
-//    [GREATER]       = {NULL,     NULL,   PREC_NONE},
-//    [GREATER_EQUAL] = {NULL,     NULL,   PREC_NONE},
-//    [LESSER]        = {NULL,     NULL,   PREC_NONE},
-//    [LESSER_EQUAL]  = {NULL,     NULL,   PREC_NONE},
-//    [IDENTIFIER]    = {NULL,     NULL,   PREC_NONE},
-//    [STRING]        = {NULL,     NULL,   PREC_NONE},
-//    [NUMBER]        = {number,   NULL,   PREC_NONE},
-//    [AND]           = {NULL,     NULL,   PREC_NONE},
-//    [STRUCT]        = {NULL,     NULL,   PREC_NONE},
-//    [ELSE]          = {NULL,     NULL,   PREC_NONE},
-//    [FALSE]         = {NULL,     NULL,   PREC_NONE},
-//    [FOR]           = {NULL,     NULL,   PREC_NONE},
-//    [FN]            = {NULL,     NULL,   PREC_NONE},
-//    [IF]            = {NULL,     NULL,   PREC_NONE},
-//    [NIL]           = {NULL,     NULL,   PREC_NONE},
-//    [OR]            = {NULL,     NULL,   PREC_NONE},
-//    [PRINT]         = {NULL,     NULL,   PREC_NONE},
-//    [RETURN]        = {NULL,     NULL,   PREC_NONE},
-//    [TRUE]          = {NULL,     NULL,   PREC_NONE},
-//    [WHILE]         = {NULL,     NULL,   PREC_NONE},
-//    [TOKEN_ERROR]   = {NULL,     NULL,   PREC_NONE},
-//    [END_OF_FILE]   = {NULL,     NULL,   PREC_NONE},
-//};
+static void statement(Parser& parser);
+static void declaration(Parser& parser);
+static void printStatement(Parser& parser);
+
+static void advance(Parser& parser);
 
 
+static bool check(const Parser& parser, TokenType type)
+{
+    return parser.current.type == type;
+}
+static bool match(Parser& parser, TokenType type)
+{
+    if(!check(parser, type))
+        return false;
+    advance(parser);
+    return true;
+}
 
 i32 addOpCode(Parser& parser, Op op)
 {
@@ -134,7 +110,7 @@ static ParseRule getRule(TokenType type)
         case TokenType::GREATER_EQUAL:    return {NULL,     binary, PREC_COMPARISON};   break;
         case TokenType::LESSER:           return {NULL,     binary, PREC_COMPARISON};   break;
         case TokenType::LESSER_EQUAL:     return {NULL,     binary, PREC_COMPARISON};   break;
-        case TokenType::IDENTIFIER:       return {NULL,     NULL,   PREC_NONE};         break;
+        case TokenType::IDENTIFIER:       return {variable, NULL,   PREC_NONE};         break;
         case TokenType::LITERAL_STRING:   return {string,   NULL,   PREC_NONE};         break;
         case TokenType::NUMBER:           return {number,   NULL,   PREC_NONE};         break;
         case TokenType::INTEGER:          return {number,   NULL,   PREC_NONE};         break;
@@ -273,9 +249,39 @@ static void literal(Parser& parser)
         default: return;
     }
 }
+
+static void namedVariable(Parser& parser, const Token& token)
+{
+    i32 structIndex = parser.script.structIndex;
+    std::string searchString = getStringFromTokenName(token);
+    while(structIndex != -1)
+    {
+        const StructDesc& desc = parser.script.structDescs[structIndex];
+        for(i32 index = 0; index < desc.parametersCount;  ++index)
+        {
+            i32 realIndex = index + desc.parameterStartIndex;
+            if(parser.script.allSymbolNames[parser.script.structSymbolNameIndices[realIndex]] == searchString)
+            {
+                emitByteCode(parser, OP_GET_GLOBAL);
+                emitByteCode(parser, Op(realIndex));
+                return;
+            }
+        }
+        structIndex = parser.script.parentStructIndices[structIndex];
+    }
+    std::string errorStr = "No variable: ";
+    errorStr += searchString;
+    errorStr += " defined for getting.";
+    errorAt(parser, token, errorStr.c_str());
+}
+
+static void variable(Parser& parser)
+{
+    namedVariable(parser, parser.previous);
+}
+
 static void string(Parser& parser)
 {
-
     std::string s = std::string((const char*)parser.previous.start + 1, parser.previous.len - 2);
 
     emitByteCode(parser, OP_CONSTANT_STRING);
@@ -351,6 +357,127 @@ static void expression(Parser& parser)
 
 }
 
+static void expressionStatement(Parser& parser)
+{
+    expression(parser);
+    consume(parser, TokenType::SEMICOLON, "Expected ';' after expression.");
+    emitByteCode(parser, OP_POP);
+}
+
+
+static void statement(Parser& parser)
+{
+    if(match(parser, TokenType::PRINT))
+    {
+        printStatement(parser);
+    }
+    else
+    {
+        expressionStatement(parser);
+    }
+}
+
+static void printStatement(Parser& parser)
+{
+    expression(parser);
+    consume(parser, TokenType::SEMICOLON, "Expect ';' after value.");
+    emitByteCode(parser, OP_PRINT);
+}
+
+static void synchronize(Parser& parser)
+{
+    while(parser.current.type != TokenType::END_OF_FILE)
+    {
+        if(parser.previous.type == TokenType::SEMICOLON)
+            return;
+
+        switch(parser.current.type)
+        {
+            case TokenType::STRUCT:
+            case TokenType::FN:
+            case TokenType::LET:
+            case TokenType::IF:
+            case TokenType::WHILE:
+            case TokenType::PRINT:
+            case TokenType::RETURN:
+                return;
+            default:
+                break;
+        }
+        advance(parser);
+    }
+}
+
+static i32 identifierConstant(Parser& parser, const Token& token)
+{
+    std::string s = getStringFromTokenName(token);
+
+    StructDesc& structDesc = parser.script.structDescs[parser.script.structIndex];
+    bool found = false;
+    for(i32 i = 0; i < structDesc.parametersCount; ++i)
+    {
+        i32 realIndex = i + structDesc.parameterStartIndex;
+        if(parser.script.allSymbolNames[realIndex] == s)
+        {
+            found = true;
+            break;
+        }
+    }
+    i32 symbolIndex = addSymbolName(parser.script, s.c_str());
+    i32 newIIndex = parser.script.structSymbolNameIndices.size();
+    parser.script.structSymbolNameIndices.push_back(symbolIndex);
+    parser.script.structValueTypes.push_back({});
+    parser.script.structValueArray.push_back({});
+    parser.script.currentStructValuePos++;
+    structDesc.parametersCount++;
+
+    if(found)
+    {
+        std::string ss = "Variable ";
+        ss += s;
+        ss += " has already been defined!";
+        errorAt(parser, token, ss.c_str());
+    }
+    return newIIndex;
+}
+
+static i32 parseVariable(Parser& parser, const char* errorMessage)
+{
+    consume(parser, TokenType::IDENTIFIER, errorMessage);
+    return identifierConstant(parser, parser.previous);
+}
+
+static void defineVariable(Parser& parser, i32 index)
+{
+    emitByteCode(parser, OP_DEFINE_GLOBAL);
+    emitByteCode(parser, Op(index));
+}
+
+static void letDeclaration(Parser& parser)
+{
+    i32 global = parseVariable(parser, "Expect variable name.");
+    consume(parser, TokenType::EQUAL, "Expect '=' with variable declaration.");
+    expression(parser);
+
+    consume(parser, TokenType::SEMICOLON, "Expect ';' after variable declaration.");
+    defineVariable(parser, global);
+}
+
+static void declaration(Parser& parser)
+{
+    if(match(parser, TokenType::LET))
+    {
+        letDeclaration(parser);
+    }
+    else
+    {
+        statement(parser);
+    }
+    if(parser.panicMode)
+    {
+        synchronize(parser);
+    }
+}
 
 bool compile(MyMemory& mem, Script& script)
 {
@@ -371,8 +498,14 @@ bool compile(MyMemory& mem, Script& script)
         .hadError = false,
     };
     advance(parser);
-    expression(parser);
-    consume(parser, TokenType::END_OF_FILE, "Expect end of expression.");
-    emitByteCode(parser, OP_RETURN);
+    //expression(parser);
+    //consume(parser, TokenType::END_OF_FILE, "Expect end of expression.");
+
+    while(!match(parser, TokenType::END_OF_FILE))
+    {
+        declaration(parser);
+    }
+
+    endCompiler(parser);
     return !parser.hadError;
 }

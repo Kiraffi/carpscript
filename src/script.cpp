@@ -16,7 +16,6 @@ static i32 addConsantTemplate(
     paramIndex += script.structDescs[structIndex].parameterStartIndex;
 
     assert(paramIndex == script.structValueTypes.size());
-    assert(paramIndex == script.structValueMemoryPosition.size());
     assert(paramIndex == script.currentStructValuePos);
     assert(paramIndex == script.structSymbolNameIndices.size());
 
@@ -25,8 +24,6 @@ static i32 addConsantTemplate(
     script.structSymbolNameIndices.emplace_back(addSymbolName(script, "constant"));
 
     i32 memPos = script.currentStructValuePos;
-
-    script.structValueMemoryPosition.emplace_back(memPos);
 
     while(memPos + 1 > script.structValueArray.size())
     {
@@ -73,10 +70,11 @@ i32 addSymbolName(Script& script, const char* name)
 }
 
 
-i32 addStruct(Script& script, const char* name)
+i32 addStruct(Script& script, const char* name, i32 parentIndex)
 {
     i32 index = (i32)script.structDescs.size();
     script.structDescs.emplace_back(StructDesc{});
+    script.parentStructIndices.push_back(parentIndex);
     script.structIndex = index;
     addSymbolName(script, name);
     return index;
@@ -137,7 +135,7 @@ i32 addConstantString(Script& script, const std::string& str, i32 lineNumber)
 {
     i32 stringIndex = script.stringLiterals.size();
     script.stringLiterals.push_back(str);
-    i32 index = addConsantTemplate(script, script.structIndex, stringIndex, ValueTypeString, lineNumber);
+    i32 index = addConsantTemplate(script, script.structIndex, stringIndex, ValueTypeStringLiteral, lineNumber);
     return index;
 
 }

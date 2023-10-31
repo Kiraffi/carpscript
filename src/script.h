@@ -26,11 +26,12 @@ struct Script
     // Need to cast the values into type
     std::vector<u64> structValueArray;
     // For example u8 = 0, u8 = 1, u32 = 4 for first 3.
-    std::vector<i32> structValueMemoryPosition;
+    //std::vector<i32> structValueMemoryPosition;
 
     std::vector<std::string> stringLiterals;
     std::vector<std::string> stackStrings;
 
+    std::vector<i32> parentStructIndices;
 
     i32 structIndex;
     i32 currentStructValuePos;
@@ -53,7 +54,7 @@ i32 addOpCode(Script& script, Op op, i32 lineNumber);
 
 i32 addSymbolName(Script& script, const char* name);
 
-i32 addStruct(Script& script, const char* name);
+i32 addStruct(Script& script, const char* name, i32 parentIndex);
 
 i32 addConstant(Script& script, i32 lineNumber);
 i32 addConstant(Script& script, bool constValue, i32 lineNumber);

@@ -25,7 +25,11 @@ enum Op : OpCodeType
     OP_LESSER,
     OP_EQUAL,
 
-    OP_CONSTANT_STRING,
+
+    OP_PRINT,
+    OP_POP,
+    OP_DEFINE_GLOBAL,
+    OP_GET_GLOBAL,
 
     OP_CONSTANT_BOOL = 0x100,
     OP_CONSTANT_I8,
@@ -38,6 +42,7 @@ enum Op : OpCodeType
     OP_CONSTANT_U64,
     OP_CONSTANT_F32,
     OP_CONSTANT_F64,
+    OP_CONSTANT_STRING,
 
     OP_ERROR,
 
@@ -62,8 +67,10 @@ static const char* getOpCodeName(OpCodeType type)
         case OP_LESSER: return "OP_LESSER";
         case OP_EQUAL: return "OP_EQUAL";
 
-        case OP_CONSTANT_STRING: return "OP_CONSTANT_STRING";
 
+        case OP_PRINT: return "OP_PRINT";
+        case OP_DEFINE_GLOBAL: return "OP_DEFINE_GLOBAL";
+        case OP_GET_GLOBAL:return "OP_GET_GLOBAL";
 
         case OP_CONSTANT_BOOL: return "OP_CONSTANT_BOOL";
         case OP_CONSTANT_I8: return "OP_CONSTANT_I8";
@@ -76,6 +83,9 @@ static const char* getOpCodeName(OpCodeType type)
         case OP_CONSTANT_U64: return "OP_CONSTANT_U64";
         case OP_CONSTANT_F32: return "OP_CONSTANT_F32";
         case OP_CONSTANT_F64: return "OP_CONSTANT_F64";
+        case OP_CONSTANT_STRING: return "OP_CONSTANT_STRING";
+
+
 
         case OP_ERROR: return "OP_ERROR";
         default:

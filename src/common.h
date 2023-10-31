@@ -4,11 +4,12 @@
 #include "op.h"
 #include "token.h"
 
+#include <string>
 #include <vector>
 
 
 #define DEBUG_PRINT_CODE 1
-#define DEBUG_TRACE_EXEC 1
+#define DEBUG_TRACE_EXEC 0
 
 struct Script;
 
@@ -28,9 +29,10 @@ enum ValueType: u8
     ValueTypeU64,
     ValueTypeF32,
     ValueTypeF64,
+    ValueTypeStringLiteral,
+    ValueTypeString,
 
     ValueTypeStruct,
-    ValueTypeString,
 
     ValueTypeCount,
 };
@@ -123,3 +125,6 @@ struct StructDesc
 };
 
 void printValue(const Script& script, const u64* value, ValueType type);
+std::string getStringFromTokenName(const Token& token);
+
+

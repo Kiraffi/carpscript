@@ -130,7 +130,8 @@ static StackType doBinaryOpOp(const StackType l, const StackType r, OpCodeType o
         case OP_LESSER: value = lt < rt; break;
         default: break;
     }
-    return value;
+    StackType returnValue = *((StackType*)(&value));
+    return returnValue;
 }
 
 static i32 doBinaryOp(
@@ -219,14 +220,6 @@ InterpretResult runCode(Script& script)
             case OP_END_OF_FILE:
             case OP_RETURN:
             {
-                StackType value = stack.back();
-                stack.pop_back();
-
-                ValueTypeDesc valueDesc = stackValueInfo.back();
-                stackValueInfo.pop_back();
-
-                printValue(script, &value, valueDesc.valueType);
-                printf("\n");
                 return InterpretResult_Ok;
             }
             case OP_CONSTANT_BOOL:
@@ -313,6 +306,57 @@ InterpretResult runCode(Script& script)
                     return InterpretResult_RuntimeError;
                 }
             }
+            case OP_PRINT:
+            {
+                StackType value = stack.back();
+                stack.pop_back();
+
+                ValueTypeDesc valueDesc = stackValueInfo.back();
+                stackValueInfo.pop_back();
+
+                printValue(script, &value, valueDesc.valueType);
+                printf("\n");
+
+                break;
+            }
+            case OP_POP:
+            {
+                stack.pop_back();
+                stackValueInfo.pop_back();
+                break;
+            }
+            case OP_DEFINE_GLOBAL:
+            {
+                u16 lookupIndex = *ip++;
+
+
+                StackType& value = script.structValueArray[lookupIndex];
+
+                ValueTypeDesc* descA;
+
+                if(!peek(stackValueInfo, 0, &descA))
+                {
+                    runtimeError(vmRuntimeError,
+                                 "Trying to peek stack that does not have enough indices: %i", 1);
+                    return InterpretResult_RuntimeError;
+                }
+                script.structValueTypes[lookupIndex] = *descA;
+                value = stack.back();
+                stack.pop_back();
+                stackValueInfo.pop_back();
+                break;
+            }
+
+            case OP_GET_GLOBAL:
+            {
+                u16 lookupIndex = *ip++;
+                StackType value = script.structValueArray[lookupIndex];
+                ValueTypeDesc desc = script.structValueTypes[lookupIndex];
+                stack.push_back(value);
+                stackValueInfo.push_back(desc);
+                break;
+            }
+
             case OP_ADD:
             case OP_SUB:
             case OP_MUL:
@@ -370,7 +414,7 @@ InterpretResult runCode(Script& script)
             }
             default:
             {
-                printf("Unknown opcode: %u\n", opCode);
+                printf("Unknown opcode runtime: %u\n", opCode);
                 assert(false);
                 break;
             }

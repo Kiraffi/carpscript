@@ -36,6 +36,19 @@ static i32 constantOpCode(const char* name, const Script& script, i32 offset, Va
     return offset + 1 + 1; // getValueTypeSizeInOpCodes(type);
 }
 
+static i32 globalVar(const char* name, const Script& script, i32 offset)
+{
+    u16 lookupIndex = script.byteCode[offset + 1];
+
+    printf("%-16s %4x '", name, lookupIndex);
+
+    printf("%s", script.allSymbolNames[script.structSymbolNameIndices[lookupIndex]].c_str());
+    printf("'\n");
+
+    return offset + 1 + 1; // getValueTypeSizeInOpCodes(type);
+}
+
+
 i32 disassembleInstruction(const Script& script, i32 offset)
 {
     printf("%05x ", offset);
@@ -51,6 +64,8 @@ i32 disassembleInstruction(const Script& script, i32 offset)
     const char* opName = getOpCodeName(opCode);
     switch(opCode)
     {
+        case OP_POP:
+        case OP_PRINT:
         case OP_END_OF_FILE:
         case OP_RETURN:
         case OP_NEGATE:
@@ -65,6 +80,7 @@ i32 disassembleInstruction(const Script& script, i32 offset)
         case OP_EQUAL:
             return simpleOpCode(opName, offset);
 
+        case OP_CONSTANT_STRING:
         case OP_CONSTANT_BOOL:
         case OP_CONSTANT_I8:
         case OP_CONSTANT_U8:
@@ -79,11 +95,16 @@ i32 disassembleInstruction(const Script& script, i32 offset)
         {
             return constantOpCode(opName, script, offset, ValueType((opCode & 0xff) + ValueTypeBool));
         }
+        case OP_DEFINE_GLOBAL:
+        case OP_GET_GLOBAL:
+        {
+            return globalVar(opName, script, offset);
+        }
 
 
         default:
         {
-            printf("Unknown opcode %d\n", opCode);
+            printf("Unknown opcode debug: %d\n", opCode);
             return offset + OpCodeTypeSize;
         }
     }
