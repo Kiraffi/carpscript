@@ -259,6 +259,24 @@ static void literal(Parser& parser)
     }
 }
 
+static i32 emitJump(Parser& parser, Op op)
+{
+    emitByteCode(parser, op);
+    emitByteCode(parser, Op(0xffff));
+    emitByteCode(parser, Op(0xffff));
+    return parser.script.byteCode.size() - 2;
+}
+static void patchJump(Parser& parser, i32 offset)
+{
+    i64 jump = parser.script.byteCode.size() - offset - 2;
+    if(jump > INT32_MAX)
+    {
+        error(parser, "Too much code to jump over.");
+    }
+    parser.script.byteCode[offset + 0] = (jump >> 0) & 0xffff;
+    parser.script.byteCode[offset + 1] = (jump >> 16) & 0xffff;
+}
+
 static i32 namedVariable(Parser& parser, const Token& token, i32& outStructIndex)
 {
     i32 structIndex = parser.script.structIndex;
@@ -472,11 +490,39 @@ static void block(Parser& parser)
     consume(parser, TokenType::RIGHT_BRACE, "Expect '}' after block.");
 }
 
+static void ifStatement(Parser& parser)
+{
+    consume(parser, TokenType::LEFT_PAREN, "Expect '(' after 'if'.");
+    expression(parser);
+    consume(parser, TokenType::RIGHT_PAREN, "Expect ')' after condition.");
+
+    i32 thenJump = emitJump(parser, OP_JUMP_IF_FALSE);
+    emitByteCode(parser, OP_POP);
+    statement(parser);
+
+    i32 elseJump = emitJump(parser, OP_JUMP);
+
+    patchJump(parser, thenJump);
+    emitByteCode(parser, OP_POP);
+
+    if(match(parser, TokenType::ELSE))
+    {
+        statement(parser);
+    }
+    patchJump(parser, elseJump);
+}
+
+
+
 static void statement(Parser& parser)
 {
     if(match(parser, TokenType::PRINT))
     {
         printStatement(parser);
+    }
+    else if(match(parser, TokenType::IF))
+    {
+        ifStatement(parser);
     }
     else if(match(parser, TokenType::LEFT_BRACE))
     {

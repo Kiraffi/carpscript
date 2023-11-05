@@ -35,6 +35,9 @@ enum Op : OpCodeType
     OP_STACK_SET,
     OP_STACK_POP,
 
+    OP_JUMP_IF_FALSE,
+    OP_JUMP,
+
     OP_CONSTANT_BOOL = 0x100,
     OP_CONSTANT_I8,
     OP_CONSTANT_U8,
@@ -80,6 +83,9 @@ static const char* getOpCodeName(OpCodeType type)
 
         case OP_STACK_SET: return "OP_STACK_SET";
         case OP_STACK_POP: return "OP_STACK_POP";
+
+        case OP_JUMP_IF_FALSE: return "OP_JUMP_IF_FALSE";
+        case OP_JUMP: return "OP_JUMP";
 
         case OP_CONSTANT_BOOL: return "OP_CONSTANT_BOOL";
         case OP_CONSTANT_I8: return "OP_CONSTANT_I8";

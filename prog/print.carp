@@ -17,3 +17,16 @@ print foo;
 print foo;
 print moo;
 print bar;
+
+if(1 > 2)
+{
+    print 1;
+}
+else if(2 > 3)
+{
+    print 2;
+}
+else
+{
+    print 3;
+}

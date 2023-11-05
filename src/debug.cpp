@@ -35,7 +35,15 @@ static i32 constantOpCode(const char* name, const Script& script, i32 offset, Va
 
     return offset + 1 + 1; // getValueTypeSizeInOpCodes(type);
 }
-
+static i32 jumpInstruction(const char* name, const Script& script, i32 offset)
+{
+    i32 offset1 = script.byteCode[offset + 1];
+    i32 offset2 = script.byteCode[offset + 2];
+    i32 jump = offset1 | (offset2 << 16);
+    printf("%-16s %4d -> %d\n", name, offset,
+           offset + 3 + jump);
+    return offset + 3;
+}
 static i32 globalVar(const char* name, const Script& script, i32 offset)
 {
     u16 lookupIndex = script.byteCode[offset + 1];
@@ -103,7 +111,9 @@ i32 disassembleInstruction(const Script& script, i32 offset)
         {
             return globalVar(opName, script, offset);
         }
-
+        case OP_JUMP:
+        case OP_JUMP_IF_FALSE:
+            return jumpInstruction(opName, script, offset);
 
         default:
         {

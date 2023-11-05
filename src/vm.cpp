@@ -88,6 +88,11 @@ static void runtimeError(VMRuntime runtime, const char* fmt, ...)
     resetStack(runtime.stack);
 }
 
+static StackType peekStack(const std::vector<StackType>& stack)
+{
+    return stack[stack.size() - 1];
+}
+
 static bool peek(std::vector<ValueTypeDesc>& descs, int distance, ValueTypeDesc** outDesc)
 {
     if(distance >= descs.size())
@@ -402,7 +407,25 @@ InterpretResult runCode(Script& script)
                 }
                 break;
             }
-
+            case OP_JUMP_IF_FALSE:
+            {
+                i32 offset1 = *ip++;
+                i32 offset2 = *ip++;
+                i32 offset = offset1 | (offset2 << 16);
+                if(!truthy(peekStack(stack)))
+                {
+                    ip += offset;
+                }
+                break;
+            }
+            case OP_JUMP:
+            {
+                i32 offset1 = *ip++;
+                i32 offset2 = *ip++;
+                i32 offset = offset1 | (offset2 << 16);
+                ip += offset;
+                break;
+            }
             case OP_ADD:
             case OP_SUB:
             case OP_MUL:
