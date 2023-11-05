@@ -92,7 +92,7 @@ template <typename T>
 static T readConstant(const OpCodeType* ip, const Script& script)
 {
     u16 lookupIndex = *ip;
-    return (*(T*)&script.structValueArray[lookupIndex]);
+    return (*(T*)&getCurrentStructStack(script).structValueArray[lookupIndex]);
 }
 template <typename T>
 static T handleConstant(T value)
@@ -236,7 +236,7 @@ InterpretResult runCode(Script& script)
             case OP_CONSTANT_F64:
             {
                 u16 lookupIndex = *ip++;
-                StackType* value = &script.structValueArray[lookupIndex];
+                StackType* value = &getCurrentStructStack(script).structValueArray[lookupIndex];
                 stack.push_back(*value);
                 ValueType type = ValueType((opCode & 0xf) + ValueTypeBool);
                 stackValueInfo.push_back(ValueTypeDesc{.valueType = type });
@@ -255,7 +255,7 @@ InterpretResult runCode(Script& script)
             case OP_CONSTANT_STRING:
             {
                 u16 lookupIndex = *ip++;
-                StackType value = script.structValueArray[lookupIndex];
+                StackType value = getCurrentStructStack(script).structValueArray[lookupIndex];
 
                 const std::string& s = script.stringLiterals[value];
 
@@ -331,7 +331,7 @@ InterpretResult runCode(Script& script)
                 u16 lookupIndex = *ip++;
 
 
-                StackType& value = script.structValueArray[lookupIndex];
+                StackType& value = getCurrentStructStack(script).structValueArray[lookupIndex];
 
                 ValueTypeDesc* descA;
 
@@ -341,7 +341,7 @@ InterpretResult runCode(Script& script)
                                  "Trying to peek stack that does not have enough indices: %i", 1);
                     return InterpretResult_RuntimeError;
                 }
-                script.structValueTypes[lookupIndex] = *descA;
+                getCurrentStructStack(script).structValueTypes[lookupIndex] = *descA;
                 value = stack.back();
                 stack.pop_back();
                 stackValueInfo.pop_back();
@@ -351,8 +351,8 @@ InterpretResult runCode(Script& script)
             case OP_GET_GLOBAL:
             {
                 u16 lookupIndex = *ip++;
-                StackType value = script.structValueArray[lookupIndex];
-                ValueTypeDesc desc = script.structValueTypes[lookupIndex];
+                StackType value = getCurrentStructStack(script).structValueArray[lookupIndex];
+                ValueTypeDesc desc = getCurrentStructStack(script).structValueTypes[lookupIndex];
                 stack.push_back(value);
                 stackValueInfo.push_back(desc);
                 break;
@@ -360,8 +360,8 @@ InterpretResult runCode(Script& script)
             case OP_SET_GLOBAL:
             {
                 u16 lookupIndex = *ip++;
-                StackType& value = script.structValueArray[lookupIndex];
-                ValueTypeDesc desc = script.structValueTypes[lookupIndex];
+                StackType& value = getCurrentStructStack(script).structValueArray[lookupIndex];
+                ValueTypeDesc desc = getCurrentStructStack(script).structValueTypes[lookupIndex];
 
                 value = stack.back();
                 stack.pop_back();

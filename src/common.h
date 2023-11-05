@@ -122,8 +122,6 @@ struct StructDesc
     // Might take several rounds to evaluate, if component structs.
     // Maybe require define in order. A should not have B inside if B has A.
     u32 structSize;
-
-    u8 cannotDeclareVariables;
 };
 
 void printValue(const Script& script, const u64* value, ValueType type);

@@ -7,6 +7,15 @@
 #include <string>
 #include <vector>
 
+struct StructStack
+{
+    StructDesc desc;
+    std::vector<u32> structSymbolNameIndices;
+    std::vector<ValueTypeDesc> structValueTypes;
+    std::vector<u64> structValueArray;
+    i32 parentStructIndex;
+};
+
 struct Script
 {
     std::vector<OpCodeType> byteCode;
@@ -20,21 +29,19 @@ struct Script
     std::vector<ValueTypeDesc> functionValueTypes;
 
     // Level 0 struct is global
-    std::vector<StructDesc> structDescs;
-    std::vector<u32> structSymbolNameIndices;
-    std::vector<ValueTypeDesc> structValueTypes;
-    // Need to cast the values into type
-    std::vector<u64> structValueArray;
-    // For example u8 = 0, u8 = 1, u32 = 4 for first 3.
-    //std::vector<i32> structValueMemoryPosition;
+    std::vector<StructStack> structStacks;
+    //std::vector<StructDesc> structDescs;
+    //std::vector<u32> structSymbolNameIndices;
+    //std::vector<ValueTypeDesc> structValueTypes;
+    //// Need to cast the values into type
+    //std::vector<u64> structValueArray;
+    //// For example u8 = 0, u8 = 1, u32 = 4 for first 3.
+    ////std::vector<i32> structValueMemoryPosition;
 
     std::vector<std::string> stringLiterals;
     std::vector<std::string> stackStrings;
 
-    std::vector<i32> parentStructIndices;
-
     i32 structIndex;
-    i32 currentStructValuePos;
 };
 
 //template<typename T>
@@ -71,4 +78,11 @@ i32 addConstant(Script& script, f64 constantValue, i32 lineNumber);
 
 i32 addConstantString(Script& script, const std::string& str, i32 lineNumber);
 
-
+static StructStack& getCurrentStructStack(Script& script)
+{
+    return script.structStacks[script.structIndex];
+}
+static const StructStack& getCurrentStructStack(const Script& script)
+{
+    return script.structStacks[script.structIndex];
+}

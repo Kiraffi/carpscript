@@ -30,7 +30,7 @@ static i32 constantOpCode(const char* name, const Script& script, i32 offset, Va
 
     printf("%-16s %4x '", name, lookupIndex);
 
-    printValue(script, &script.structValueArray[lookupIndex], type);
+    printValue(script, &getCurrentStructStack(script).structValueArray[lookupIndex], type);
     printf("'\n");
 
     return offset + 1 + 1; // getValueTypeSizeInOpCodes(type);
@@ -42,7 +42,7 @@ static i32 globalVar(const char* name, const Script& script, i32 offset)
 
     printf("%-16s %4x '", name, lookupIndex);
 
-    printf("%s", script.allSymbolNames[script.structSymbolNameIndices[lookupIndex]].c_str());
+    printf("%s", script.allSymbolNames[getCurrentStructStack(script).structSymbolNameIndices[lookupIndex]].c_str());
     printf("'\n");
 
     return offset + 1 + 1; // getValueTypeSizeInOpCodes(type);

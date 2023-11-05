@@ -10,42 +10,33 @@ static i32 addConsantTemplate(
     ValueType type,
     i32 lineNumber)
 {
-    assert(structIndex >= 0 && structIndex == script.structDescs.size() - 1);
+    assert(structIndex >= 0 && structIndex == script.structStacks.size() - 1);
 
-    u16 paramIndex = script.structDescs[structIndex].parametersCount++;
-    paramIndex += script.structDescs[structIndex].parameterStartIndex;
+    StructStack& s = script.structStacks[structIndex];
+    u16 paramIndex = s.desc.parametersCount++;
+    paramIndex += s.desc.parameterStartIndex;
 
-    assert(paramIndex == script.structValueTypes.size());
-    assert(paramIndex == script.currentStructValuePos);
-    assert(paramIndex == script.structSymbolNameIndices.size());
+    //assert(paramIndex == s.structValueTypes.size());
+    //assert(paramIndex == s.structSymbolNameIndices.size());
 
-    script.structValueTypes.emplace_back(ValueTypeDesc{.valueType = type});
+    s.structValueTypes.emplace_back(ValueTypeDesc{.valueType = type});
     // "constant" should always be 0
-    script.structSymbolNameIndices.emplace_back(addSymbolName(script, "constant"));
+    s.structSymbolNameIndices.emplace_back(addSymbolName(script, "constant"));
 
-    i32 memPos = script.currentStructValuePos;
+    i32 memPos = (i32)s.structValueArray.size();
 
-    while(memPos + 1 > script.structValueArray.size())
+    while(memPos + 1 > s.structValueArray.size())
     {
-        script.structValueArray.emplace_back(0);
+        s.structValueArray.emplace_back(0);
     }
 
-    u64* p = &script.structValueArray[memPos];
+    u64* p = &s.structValueArray[memPos];
     T* t = (T*)p;
     *t = constantValue;
-
-    updateCurrentStructValuePos(script, memPos + 1);
 
     script.byteCode.emplace_back(memPos);
     script.byteCodeLines.emplace_back(lineNumber);
     return memPos;
-}
-
-void updateCurrentStructValuePos(Script& script, i32 value)
-{
-    assert(script.currentStructValuePos < value);
-    script.currentStructValuePos = value;
-    assert(script.currentStructValuePos < 65536);
 }
 
 
@@ -72,9 +63,9 @@ i32 addSymbolName(Script& script, const char* name)
 
 i32 addStruct(Script& script, const char* name, i32 parentIndex)
 {
-    i32 index = (i32)script.structDescs.size();
-    script.structDescs.emplace_back(StructDesc{});
-    script.parentStructIndices.push_back(parentIndex);
+    i32 index = (i32)script.structStacks.size();
+    script.structStacks.emplace_back();
+    script.structStacks[index].parentStructIndex = parentIndex;
     script.structIndex = index;
     addSymbolName(script, name);
     return index;

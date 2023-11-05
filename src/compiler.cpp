@@ -265,16 +265,16 @@ static i32 namedVariable(Parser& parser, const Token& token)
     std::string searchString = getStringFromTokenName(token);
     while(structIndex != -1)
     {
-        const StructDesc& desc = parser.script.structDescs[structIndex];
-        for(i32 index = 0; index < desc.parametersCount;  ++index)
+        const StructStack& s = parser.script.structStacks[structIndex];
+        for(i32 index = 0; index < s.structSymbolNameIndices.size();  ++index)
         {
-            i32 realIndex = index + desc.parameterStartIndex;
-            if(parser.script.allSymbolNames[parser.script.structSymbolNameIndices[realIndex]] == searchString)
+            i32 realIndex = index;
+            if(parser.script.allSymbolNames[s.structSymbolNameIndices[realIndex]] == searchString)
             {
                 return index;
             }
         }
-        structIndex = parser.script.parentStructIndices[structIndex];
+        structIndex = s.parentStructIndex;
     }
     std::string errorStr = "No variable: ";
     errorStr += searchString;
@@ -287,7 +287,7 @@ static void variable(Parser& parser)
 {
     i32 index = namedVariable(parser, parser.previous);
 
-    if(index >= 0 && index < (i32)parser.script.structSymbolNameIndices.size())
+    if(index >= 0 && index < (i32)getCurrentStructStack(parser.script).structSymbolNameIndices.size())
     {
         if(match(parser, TokenType::EQUAL))
         {
@@ -386,7 +386,7 @@ static void expression(Parser& parser)
         
         i32 index = namedVariable(parser, previousToken);
 
-        if(index >= 0 && index < (i32) parser.script.structSymbolNameIndices.size())
+        if(index >= 0 && index < (i32) getCurrentStructStack(parser.script).structSymbolNameIndices.size())
         {
             emitByteCode(parser, OP_SET_GLOBAL);
             emitByteCode(parser, Op(index));
@@ -409,9 +409,6 @@ static void expressionStatement(Parser& parser)
 
 static void beginScope(Parser &parser)
 {
-    StructDesc &current = parser.script.structDescs[parser.script.structIndex];
-    current.cannotDeclareVariables = 1;
-
     i32 index = addStruct(parser.script, "block", parser.script.structIndex);
 
     // currentScope->scopeDepth++;
@@ -419,13 +416,11 @@ static void beginScope(Parser &parser)
 
 static void endScope(Parser &parser)
 {
-    StructDesc &current = parser.script.structDescs[parser.script.structIndex];
-    current.cannotDeclareVariables = 1;
-    i32 parentStructIndex = parser.script.parentStructIndices[parser.script.structIndex];
-    assert(parentStructIndex >= 0 && parentStructIndex < parser.script.structDescs.size());
+    StructStack &current = parser.script.structStacks[parser.script.structIndex];
+    i32 parentStructIndex = current.parentStructIndex;
+    assert(parentStructIndex >= 0 && parentStructIndex < parser.script.structStacks.size());
     
     parser.script.structIndex = parentStructIndex;
-    current.cannotDeclareVariables = 1;
 }
 
 static void block(Parser& parser)
@@ -489,35 +484,36 @@ static void synchronize(Parser& parser)
 
 static i32 identifierConstant(Parser& parser, const Token& token)
 {
-    std::string s = getStringFromTokenName(token);
+    std::string str = getStringFromTokenName(token);
 
-    StructDesc& structDesc = parser.script.structDescs[parser.script.structIndex];
+    StructStack& sta = parser.script.structStacks[parser.script.structIndex];
     bool found = false;
-    for(i32 i = 0; i < structDesc.parametersCount; ++i)
+    for(i32 i = 0; i < sta.structSymbolNameIndices.size(); ++i)
     {
-        i32 realIndex = i + structDesc.parameterStartIndex;
-        if(realIndex < parser.script.allSymbolNames.size() && parser.script.allSymbolNames[realIndex] == s)
+        i32 realIndex = i;
+        if(realIndex < parser.script.allSymbolNames.size() && parser.script.allSymbolNames[realIndex] == str)
         {
             found = true;
             break;
         }
     }
-    i32 symbolIndex = addSymbolName(parser.script, s.c_str());
-    i32 newIIndex = parser.script.structSymbolNameIndices.size();
-    parser.script.structSymbolNameIndices.push_back(symbolIndex);
-    parser.script.structValueTypes.push_back({});
-    parser.script.structValueArray.push_back({});
-    parser.script.currentStructValuePos++;
-    structDesc.parametersCount++;
-
+    i32 newIndex = -1;
     if(found)
     {
         std::string ss = "Variable ";
-        ss += s;
+        ss += str;
         ss += " has already been defined!";
         errorAt(parser, token, ss.c_str());
     }
-    return newIIndex;
+    else
+    {
+        i32 symbolIndex = addSymbolName(parser.script, str.c_str());
+        newIndex = (i32)sta.structSymbolNameIndices.size();
+        sta.structSymbolNameIndices.push_back(symbolIndex);
+        sta.structValueTypes.push_back({});
+        sta.structValueArray.push_back({});
+    }
+    return newIndex;
 }
 
 static i32 parseVariable(Parser& parser, const char* errorMessage)
