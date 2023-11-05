@@ -123,7 +123,7 @@ struct StructDesc
     // Maybe require define in order. A should not have B inside if B has A.
     u32 structSize;
 
-    u8 canDeclareVariables;
+    u8 cannotDeclareVariables;
 };
 
 void printValue(const Script& script, const u64* value, ValueType type);
