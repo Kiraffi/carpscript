@@ -407,11 +407,48 @@ static void expressionStatement(Parser& parser)
 }
 
 
+static void beginScope(Parser &parser)
+{
+    StructDesc &current = parser.script.structDescs[parser.script.structIndex];
+    current.cannotDeclareVariables = 1;
+
+    i32 index = addStruct(parser.script, "block", parser.script.structIndex);
+
+    // currentScope->scopeDepth++;
+}
+
+static void endScope(Parser &parser)
+{
+    StructDesc &current = parser.script.structDescs[parser.script.structIndex];
+    current.cannotDeclareVariables = 1;
+    i32 parentStructIndex = parser.script.parentStructIndices[parser.script.structIndex];
+    assert(parentStructIndex >= 0 && parentStructIndex < parser.script.structDescs.size());
+    
+    parser.script.structIndex = parentStructIndex;
+    current.cannotDeclareVariables = 1;
+}
+
+static void block(Parser& parser)
+{
+    while(!check(parser, TokenType::RIGHT_BRACE) && !check(parser, TokenType::END_OF_FILE))
+    {
+        declaration(parser);
+    }
+
+    consume(parser, TokenType::RIGHT_BRACE, "Expect '}' after block.");
+}
+
 static void statement(Parser& parser)
 {
     if(match(parser, TokenType::PRINT))
     {
         printStatement(parser);
+    }
+    else if(match(parser, TokenType::LEFT_BRACE))
+    {
+        beginScope(parser);
+        block(parser);
+        endScope(parser);
     }
     else
     {
