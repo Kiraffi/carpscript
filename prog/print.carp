@@ -1,7 +1,7 @@
-let foo = 3.0;
+let foo = 4.0;
 let moo = 2.0;
-let bar = bar + 1.0;
-print bar;
+let bar = moo = moo + 1.0;
+print bar + 7.0;
 print moo;
 print foo;
 foo = foo + moo;

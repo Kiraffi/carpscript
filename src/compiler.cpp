@@ -291,7 +291,7 @@ static void variable(Parser& parser)
     {
         if(match(parser, TokenType::EQUAL))
         {
-            assert(false, "Should never get here!");
+            //assert(false, "Should never get here!");
             emitByteCode(parser, OP_SET_GLOBAL);
             emitByteCode(parser, Op(index));
         }
@@ -376,8 +376,27 @@ static void parsePrecedence(Parser& parser, Precedence precedence)
 
 static void expression(Parser& parser)
 {
-    parsePrecedence(parser, Precedence::PREC_ASSIGNMENT);
+    if(check(parser, TokenType::IDENTIFIER) && check2(parser, TokenType::EQUAL))
+    {
+        advance(parser);
+        const Token previousToken = parser.previous;
+        advance(parser);
 
+        expression(parser);
+        
+        i32 index = namedVariable(parser, previousToken);
+
+        if(index >= 0 && index < (i32) parser.script.structSymbolNameIndices.size())
+        {
+            emitByteCode(parser, OP_SET_GLOBAL);
+            emitByteCode(parser, Op(index));
+        }
+    }
+
+    else
+    {
+        parsePrecedence(parser, Precedence::PREC_ASSIGNMENT);
+    }
 }
 
 static void expressionStatement(Parser& parser)
@@ -393,31 +412,6 @@ static void statement(Parser& parser)
     if(match(parser, TokenType::PRINT))
     {
         printStatement(parser);
-    }
-    else if(check(parser, TokenType::IDENTIFIER))
-    {
-        if(check2(parser, TokenType::EQUAL))
-        {
-            advance(parser);
-            const Token previousToken = parser.previous;
-            advance(parser);
-
-            expression(parser);
-            consume(parser, TokenType::SEMICOLON, "Expected ';' after expression.");
-
-            i32 index = namedVariable(parser, previousToken);
-
-            if(index >= 0 && index < (i32) parser.script.structSymbolNameIndices.size())
-            {
-                emitByteCode(parser, OP_SET_GLOBAL);
-                emitByteCode(parser, Op(index));
-            }
-            
-        }
-        else
-        {
-            expressionStatement(parser);
-        }
     }
     else
     {
