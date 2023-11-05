@@ -385,6 +385,36 @@ InterpretResult runCode(Script& script)
 
                 break;
             }
+            case OP_STACK_SET:
+            {
+                u16 lookupIndex = *ip++;
+                if(lookupIndex < 0 || lookupIndex >= (i32)script.structStacks.size())
+                {
+                    runtimeError(VMRuntime {.stack = stack, .codeStart = ipStart, .ip = ip,
+                                     .lines = lines, },
+                                 "Stack has no parent index!");
+                    return InterpretResult_RuntimeError;
+                }
+
+                script.structIndex = (i32)lookupIndex;
+                break;
+            }
+            case OP_STACK_POP:
+            {
+                i32 parentIndex = getCurrentStructStack(script).parentStructIndex;
+                if(parentIndex < 0 || parentIndex >= (i32)script.structStacks.size())
+                {
+                    runtimeError(VMRuntime {.stack = stack, .codeStart = ipStart, .ip = ip,
+                         .lines = lines, },
+                     "Stack has no parent index!");
+                    return InterpretResult_RuntimeError;
+                }
+                else
+                {
+                    script.structIndex = parentIndex;
+                }
+                break;
+            }
 
             case OP_ADD:
             case OP_SUB:

@@ -259,9 +259,10 @@ static void literal(Parser& parser)
     }
 }
 
-static i32 namedVariable(Parser& parser, const Token& token)
+static i32 namedVariable(Parser& parser, const Token& token, i32& outStructIndex)
 {
     i32 structIndex = parser.script.structIndex;
+    outStructIndex = structIndex;
     std::string searchString = getStringFromTokenName(token);
     while(structIndex != -1)
     {
@@ -275,6 +276,7 @@ static i32 namedVariable(Parser& parser, const Token& token)
             }
         }
         structIndex = s.parentStructIndex;
+        outStructIndex = structIndex;
     }
     std::string errorStr = "No variable: ";
     errorStr += searchString;
@@ -285,21 +287,33 @@ static i32 namedVariable(Parser& parser, const Token& token)
 
 static void variable(Parser& parser)
 {
-    i32 index = namedVariable(parser, parser.previous);
+    i32 structIndex = -1;
+    Token previous = parser.previous;
+    i32 index = namedVariable(parser, previous, structIndex);
 
-    if(index >= 0 && index < (i32)getCurrentStructStack(parser.script).structSymbolNameIndices.size())
+
+    if(structIndex >= 0 && structIndex < (i32)parser.script.structStacks.size()
+       && index >= 0 && index < (i32) parser.script.structStacks[structIndex].structSymbolNameIndices.size())
     {
-        if(match(parser, TokenType::EQUAL))
+        bool popping = structIndex != parser.script.structIndex;
+        if(popping)
         {
-            //assert(false, "Should never get here!");
-            emitByteCode(parser, OP_SET_GLOBAL);
-            emitByteCode(parser, Op(index));
+            emitByteCode(parser, OP_STACK_SET);
+            emitByteCode(parser, Op(structIndex));
         }
-        else
+
+        emitByteCode(parser, OP_GET_GLOBAL);
+        emitByteCode(parser, Op(index));
+        if(popping)
         {
-            emitByteCode(parser, OP_GET_GLOBAL);
-            emitByteCode(parser, Op(index));
+            emitByteCode(parser, OP_STACK_SET);
+            emitByteCode(parser, Op(parser.script.structIndex));
+
         }
+    }
+    else
+    {
+        errorAt(parser, previous, "failed to find proper parsing thingy for getter");
     }
 }
 
@@ -383,13 +397,32 @@ static void expression(Parser& parser)
         advance(parser);
 
         expression(parser);
-        
-        i32 index = namedVariable(parser, previousToken);
 
-        if(index >= 0 && index < (i32) getCurrentStructStack(parser.script).structSymbolNameIndices.size())
+        i32 structIndex = -1;
+        i32 index = namedVariable(parser, previousToken, structIndex);
+
+        if(structIndex >= 0 && structIndex < (i32)parser.script.structStacks.size()
+            && index >= 0 && index < (i32) parser.script.structStacks[structIndex].structSymbolNameIndices.size())
         {
+            bool popping = structIndex != parser.script.structIndex;
+            if(popping)
+            {
+                emitByteCode(parser, OP_STACK_SET);
+                emitByteCode(parser, Op(structIndex));
+
+            }
             emitByteCode(parser, OP_SET_GLOBAL);
             emitByteCode(parser, Op(index));
+            if(popping)
+            {
+                emitByteCode(parser, OP_STACK_SET);
+                emitByteCode(parser, Op(parser.script.structIndex));
+
+            }
+        }
+        else
+        {
+            errorAt(parser, previousToken, "failed to find proper parsing thingy for assignment");
         }
     }
 
@@ -411,6 +444,10 @@ static void beginScope(Parser &parser)
 {
     i32 index = addStruct(parser.script, "block", parser.script.structIndex);
 
+    emitByteCode(parser, OP_STACK_SET);
+    emitByteCode(parser, Op(index));
+
+
     // currentScope->scopeDepth++;
 }
 
@@ -419,7 +456,9 @@ static void endScope(Parser &parser)
     StructStack &current = parser.script.structStacks[parser.script.structIndex];
     i32 parentStructIndex = current.parentStructIndex;
     assert(parentStructIndex >= 0 && parentStructIndex < parser.script.structStacks.size());
-    
+
+    emitByteCode(parser, OP_STACK_POP);
+
     parser.script.structIndex = parentStructIndex;
 }
 

@@ -6,3 +6,10 @@ print moo;
 print foo;
 foo = foo + moo;
 print foo;
+
+{
+    let foo = 180.0 + foo;
+    print foo;
+}
+
+print foo;

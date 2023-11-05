@@ -64,6 +64,7 @@ i32 disassembleInstruction(const Script& script, i32 offset)
     const char* opName = getOpCodeName(opCode);
     switch(opCode)
     {
+        case OP_STACK_POP:
         case OP_POP:
         case OP_PRINT:
         case OP_END_OF_FILE:
@@ -80,6 +81,7 @@ i32 disassembleInstruction(const Script& script, i32 offset)
         case OP_EQUAL:
             return simpleOpCode(opName, offset);
 
+        case OP_STACK_SET:
         case OP_CONSTANT_STRING:
         case OP_CONSTANT_BOOL:
         case OP_CONSTANT_I8:

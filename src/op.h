@@ -32,6 +32,9 @@ enum Op : OpCodeType
     OP_GET_GLOBAL,
     OP_SET_GLOBAL,
 
+    OP_STACK_SET,
+    OP_STACK_POP,
+
     OP_CONSTANT_BOOL = 0x100,
     OP_CONSTANT_I8,
     OP_CONSTANT_U8,
@@ -74,7 +77,10 @@ static const char* getOpCodeName(OpCodeType type)
         case OP_DEFINE_GLOBAL: return "OP_DEFINE_GLOBAL";
         case OP_GET_GLOBAL:return "OP_GET_GLOBAL";
         case OP_SET_GLOBAL:return "OP_SET_GLOBAL";
-            
+
+        case OP_STACK_SET: return "OP_STACK_SET";
+        case OP_STACK_POP: return "OP_STACK_POP";
+
         case OP_CONSTANT_BOOL: return "OP_CONSTANT_BOOL";
         case OP_CONSTANT_I8: return "OP_CONSTANT_I8";
         case OP_CONSTANT_U8: return "OP_CONSTANT_U8";
