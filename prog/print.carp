@@ -41,4 +41,12 @@ if(4 > 3 || 3 == 3)
     print "or truth";
 }
 
+let i = 100;
+while(i < 110)
+{
+    print i;
+    i = i + 1;
+}
+
+
 

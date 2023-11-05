@@ -271,10 +271,11 @@ static i32 emitJump(Parser& parser, Op op)
 static void patchJump(Parser& parser, i32 offset)
 {
     i64 jump = parser.script.byteCode.size() - offset - 2;
-    if(jump > INT32_MAX)
+    if(offset > INT32_MAX || offset < INT32_MIN)
     {
         error(parser, "Too much code to jump over.");
     }
+
     parser.script.byteCode[offset + 0] = (jump >> 0) & 0xffff;
     parser.script.byteCode[offset + 1] = (jump >> 16) & 0xffff;
 }
@@ -533,6 +534,36 @@ static void ifStatement(Parser& parser)
     patchJump(parser, elseJump);
 }
 
+static void emitLoop(Parser& parser, i32 loopStart)
+{
+    emitByteCode(parser, OP_JUMP);
+    i64 offset = loopStart - (i32)parser.script.byteCode.size() - 2;
+    if(offset > INT32_MAX || offset < INT32_MIN)
+    {
+        error(parser, "Loop body jump too large.");
+    }
+    emitByteCode(parser, Op(offset & 0xffff));
+    emitByteCode(parser, Op((offset >> 16) & 0xffff));
+}
+
+static void whileStatement(Parser& parser)
+{
+    i32 loopStart = (i32)parser.script.byteCode.size();
+    consume(parser, TokenType::LEFT_PAREN, "Expect '(' after 'while'.");
+    expression(parser);
+    consume(parser, TokenType::RIGHT_PAREN, "Expect ')' after 'while' condition.");
+
+    i32 exitJmp = emitJump(parser, OP_JUMP_IF_FALSE);
+    emitByteCode(parser, OP_POP);
+    statement(parser);
+    emitLoop(parser, loopStart);
+
+    patchJump(parser, exitJmp);
+    emitByteCode(parser, OP_POP);
+}
+
+
+
 
 
 static void statement(Parser& parser)
@@ -544,6 +575,10 @@ static void statement(Parser& parser)
     else if(match(parser, TokenType::IF))
     {
         ifStatement(parser);
+    }
+    else if(match(parser, TokenType::WHILE))
+    {
+        whileStatement(parser);
     }
     else if(match(parser, TokenType::LEFT_BRACE))
     {

@@ -434,6 +434,7 @@ InterpretResult runCode(Script& script)
             {
                 i32 offset1 = *ip++;
                 i32 offset2 = *ip++;
+
                 i32 offset = offset1 | (offset2 << 16);
                 ip += offset;
                 break;
