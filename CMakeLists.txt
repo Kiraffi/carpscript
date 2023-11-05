@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.26)
+cmake_minimum_required(VERSION 3.22)
 project(carpscript)
 
 set(CMAKE_CXX_STANDARD 20)
@@ -23,3 +23,9 @@ add_executable(carpscript src/main.cpp
 
         src/main_old.cpp
 )
+
+set_target_properties(carpscript
+    PROPERTIES
+    RUNTIME_OUTPUT_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/"
+)
+

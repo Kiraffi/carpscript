@@ -6,7 +6,7 @@
 
 using OpCodeType = u16;
 constexpr i32 OpCodeTypeSize = (i32)sizeof(OpCodeType);
-static_assert(OpCodeTypeSize >= 2);
+static_assert(OpCodeTypeSize >= 2, "Op code size needs to be 2 at least.");
 enum Op : OpCodeType
 {
     OP_END_OF_FILE,
@@ -30,6 +30,7 @@ enum Op : OpCodeType
     OP_POP,
     OP_DEFINE_GLOBAL,
     OP_GET_GLOBAL,
+    OP_SET_GLOBAL,
 
     OP_CONSTANT_BOOL = 0x100,
     OP_CONSTANT_I8,
@@ -69,9 +70,11 @@ static const char* getOpCodeName(OpCodeType type)
 
 
         case OP_PRINT: return "OP_PRINT";
+        case OP_POP: return "OP_POP";
         case OP_DEFINE_GLOBAL: return "OP_DEFINE_GLOBAL";
         case OP_GET_GLOBAL:return "OP_GET_GLOBAL";
-
+        case OP_SET_GLOBAL:return "OP_SET_GLOBAL";
+            
         case OP_CONSTANT_BOOL: return "OP_CONSTANT_BOOL";
         case OP_CONSTANT_I8: return "OP_CONSTANT_I8";
         case OP_CONSTANT_U8: return "OP_CONSTANT_U8";
@@ -91,4 +94,5 @@ static const char* getOpCodeName(OpCodeType type)
         default:
             assert(false);
     }
+    return "";
 }

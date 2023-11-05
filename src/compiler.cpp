@@ -20,6 +20,7 @@ struct Parser
     Script& script;
     Token previous;
     Token current;
+    Token next;
     bool hadError;
     bool panicMode;
 };
@@ -72,6 +73,12 @@ static bool check(const Parser& parser, TokenType type)
 {
     return parser.current.type == type;
 }
+
+static bool check2(const Parser &parser, TokenType type)
+{
+    return parser.next.type == type;
+}
+
 static bool match(Parser& parser, TokenType type)
 {
     if(!check(parser, type))
@@ -182,13 +189,15 @@ static void error(Parser& parser, const char* message)
 static void advance(Parser& parser)
 {
     parser.previous = parser.current;
+    parser.current = parser.next;
+
     while(true)
     {
-        parser.current = scanToken(parser.scanner);
-        if(parser.current.type != TokenType::TOKEN_ERROR)
+        parser.next = scanToken(parser.scanner);
+        if(parser.next.type != TokenType::TOKEN_ERROR)
             break;
 
-        errorAtCurrent(parser, (const char*)parser.current.start);
+        errorAtCurrent(parser, (const char*)parser.next.start);
     }
 }
 
@@ -250,7 +259,7 @@ static void literal(Parser& parser)
     }
 }
 
-static void namedVariable(Parser& parser, const Token& token)
+static i32 namedVariable(Parser& parser, const Token& token)
 {
     i32 structIndex = parser.script.structIndex;
     std::string searchString = getStringFromTokenName(token);
@@ -262,9 +271,7 @@ static void namedVariable(Parser& parser, const Token& token)
             i32 realIndex = index + desc.parameterStartIndex;
             if(parser.script.allSymbolNames[parser.script.structSymbolNameIndices[realIndex]] == searchString)
             {
-                emitByteCode(parser, OP_GET_GLOBAL);
-                emitByteCode(parser, Op(realIndex));
-                return;
+                return index;
             }
         }
         structIndex = parser.script.parentStructIndices[structIndex];
@@ -273,11 +280,26 @@ static void namedVariable(Parser& parser, const Token& token)
     errorStr += searchString;
     errorStr += " defined for getting.";
     errorAt(parser, token, errorStr.c_str());
+    return -1;
 }
 
 static void variable(Parser& parser)
 {
-    namedVariable(parser, parser.previous);
+    i32 index = namedVariable(parser, parser.previous);
+
+    if(index >= 0 && index < (i32)parser.script.structSymbolNameIndices.size())
+    {
+        if(match(parser, TokenType::EQUAL))
+        {
+            emitByteCode(parser, OP_SET_GLOBAL);
+            emitByteCode(parser, Op(index));
+        }
+        else
+        {
+            emitByteCode(parser, OP_GET_GLOBAL);
+            emitByteCode(parser, Op(index));
+        }
+    }
 }
 
 static void string(Parser& parser)
@@ -370,6 +392,32 @@ static void statement(Parser& parser)
     if(match(parser, TokenType::PRINT))
     {
         printStatement(parser);
+    }
+    else if(check(parser, TokenType::IDENTIFIER))
+    {
+        if(check2(parser, TokenType::EQUAL))
+        {
+            advance(parser);
+            i32 index = namedVariable(parser, parser.previous);
+
+            advance(parser);
+
+
+            expression(parser);
+            consume(parser, TokenType::SEMICOLON, "Expected ';' after expression.");
+
+
+            if(index >= 0 && index < (i32) parser.script.structSymbolNameIndices.size())
+            {
+                emitByteCode(parser, OP_SET_GLOBAL);
+                emitByteCode(parser, Op(index));
+            }
+            
+        }
+        else
+        {
+            expressionStatement(parser);
+        }
     }
     else
     {
@@ -497,6 +545,7 @@ bool compile(MyMemory& mem, Script& script)
         .script = script,
         .hadError = false,
     };
+    advance(parser);
     advance(parser);
     //expression(parser);
     //consume(parser, TokenType::END_OF_FILE, "Expect end of expression.");

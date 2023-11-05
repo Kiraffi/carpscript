@@ -48,7 +48,7 @@ static HelperStruct valuesEqualHelper(std::vector<StackType>& stack, std::vector
     return result;
 }
 
-static bool valuesEqual(Script& script, std::vector<StackType>& stack, std::vector<ValueTypeDesc> &stackValueInfo)
+static void valuesEqual(Script& script, std::vector<StackType>& stack, std::vector<ValueTypeDesc> &stackValueInfo)
 {
     HelperStruct s = valuesEqualHelper(stack, stackValueInfo);
     bool isTrue = s.descB.valueType == s.descA.valueType;
@@ -61,6 +61,7 @@ static bool valuesEqual(Script& script, std::vector<StackType>& stack, std::vect
     }
     stack.push_back((equal) ? ~(0) : 0);
     stackValueInfo.push_back({.valueType = ValueTypeBool});
+
 }
 
 static i32 getInstructionIndex(const OpCodeType* current, const OpCodeType* start)
@@ -354,6 +355,34 @@ InterpretResult runCode(Script& script)
                 ValueTypeDesc desc = script.structValueTypes[lookupIndex];
                 stack.push_back(value);
                 stackValueInfo.push_back(desc);
+                break;
+            }
+            case OP_SET_GLOBAL:
+            {
+                u16 lookupIndex = *ip++;
+                StackType& value = script.structValueArray[lookupIndex];
+                ValueTypeDesc desc = script.structValueTypes[lookupIndex];
+
+                value = stack.back();
+                stack.pop_back();
+
+                ValueTypeDesc otherDesc = stackValueInfo.back();
+                assert(desc.valueType == otherDesc.valueType);
+                stackValueInfo.pop_back();
+
+
+                stack.push_back(value);
+                stackValueInfo.push_back(desc);
+
+                if(desc.valueType != otherDesc.valueType)
+                {
+                    runtimeError(VMRuntime {.stack = stack, .codeStart = ipStart, .ip = ip,
+                        .lines = lines, },
+                        "Valuetypes mismatch for assignment: %i vs %i!", desc.valueType, otherDesc.valueType);
+                    return InterpretResult_RuntimeError;
+
+                }
+
                 break;
             }
 

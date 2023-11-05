@@ -32,3 +32,8 @@
 *.app
 
 cmake-build-debug/**
+.vs/**
+build/**
+out/**
+carpscript.ilk
+carpscript.pdb

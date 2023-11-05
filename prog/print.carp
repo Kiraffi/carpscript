@@ -1,4 +1,3 @@
-let myvariable = 2.0;
 let foo = 3.0;
-let moo = myvariable + foo;
-print moo;
+foo = 3.0 + 2.0;
+print foo;

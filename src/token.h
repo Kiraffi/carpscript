@@ -62,7 +62,7 @@ static const char* TOKEN_NAMES[] = {
     // End of file must be last
     "END_OF_FILE",
 };
-static_assert(sizeof(TOKEN_NAMES) / sizeof(const char*) == (i32)(TokenType::END_OF_FILE) + 1);
+static_assert(sizeof(TOKEN_NAMES) / sizeof(const char*) == (i32)(TokenType::END_OF_FILE) + 1, "Mismatched amounts");
 
 struct Token
 {

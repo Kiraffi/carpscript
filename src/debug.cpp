@@ -97,6 +97,7 @@ i32 disassembleInstruction(const Script& script, i32 offset)
         }
         case OP_DEFINE_GLOBAL:
         case OP_GET_GLOBAL:
+        case OP_SET_GLOBAL:
         {
             return globalVar(opName, script, offset);
         }
