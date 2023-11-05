@@ -1,3 +1,8 @@
 let foo = 3.0;
-foo = 3.0 + 2.0;
+let moo = 2.0;
+let bar = bar + 1.0;
+print bar;
+print moo;
+print foo;
+foo = foo + moo;
 print foo;

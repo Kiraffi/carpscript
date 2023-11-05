@@ -291,6 +291,7 @@ static void variable(Parser& parser)
     {
         if(match(parser, TokenType::EQUAL))
         {
+            assert(false, "Should never get here!");
             emitByteCode(parser, OP_SET_GLOBAL);
             emitByteCode(parser, Op(index));
         }
@@ -398,14 +399,13 @@ static void statement(Parser& parser)
         if(check2(parser, TokenType::EQUAL))
         {
             advance(parser);
-            i32 index = namedVariable(parser, parser.previous);
-
+            const Token previousToken = parser.previous;
             advance(parser);
-
 
             expression(parser);
             consume(parser, TokenType::SEMICOLON, "Expected ';' after expression.");
 
+            i32 index = namedVariable(parser, previousToken);
 
             if(index >= 0 && index < (i32) parser.script.structSymbolNameIndices.size())
             {
@@ -465,7 +465,7 @@ static i32 identifierConstant(Parser& parser, const Token& token)
     for(i32 i = 0; i < structDesc.parametersCount; ++i)
     {
         i32 realIndex = i + structDesc.parameterStartIndex;
-        if(parser.script.allSymbolNames[realIndex] == s)
+        if(realIndex < parser.script.allSymbolNames.size() && parser.script.allSymbolNames[realIndex] == s)
         {
             found = true;
             break;
@@ -503,11 +503,15 @@ static void defineVariable(Parser& parser, i32 index)
 
 static void letDeclaration(Parser& parser)
 {
-    i32 global = parseVariable(parser, "Expect variable name.");
+    consume(parser, TokenType::IDENTIFIER, "Expect variable name.");
+    Token previous = parser.previous;
     consume(parser, TokenType::EQUAL, "Expect '=' with variable declaration.");
     expression(parser);
 
     consume(parser, TokenType::SEMICOLON, "Expect ';' after variable declaration.");
+
+    i32 global = identifierConstant(parser, previous);
+
     defineVariable(parser, global);
 }
 
