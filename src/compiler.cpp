@@ -61,6 +61,8 @@ static void number(Parser& parser);
 static void literal(Parser& parser);
 static void string(Parser& parser);
 static void variable(Parser& parser);
+static void andFn(Parser& parser);
+static void orFn(Parser& parser);
 
 static void statement(Parser& parser);
 static void declaration(Parser& parser);
@@ -121,7 +123,7 @@ static ParseRule getRule(TokenType type)
         case TokenType::LITERAL_STRING:   return {string,   NULL,   PREC_NONE};         break;
         case TokenType::NUMBER:           return {number,   NULL,   PREC_NONE};         break;
         case TokenType::INTEGER:          return {number,   NULL,   PREC_NONE};         break;
-        case TokenType::AND:              return {NULL,     NULL,   PREC_NONE};         break;
+        case TokenType::AND:              return {NULL,     andFn,  PREC_AND};          break;
         case TokenType::STRUCT:           return {NULL,     NULL,   PREC_NONE};         break;
         case TokenType::ELSE:             return {NULL,     NULL,   PREC_NONE};         break;
         case TokenType::FALSE:            return {literal,  NULL,   PREC_NONE};         break;
@@ -129,7 +131,7 @@ static ParseRule getRule(TokenType type)
         case TokenType::FN:               return {NULL,     NULL,   PREC_NONE};         break;
         case TokenType::IF:               return {NULL,     NULL,   PREC_NONE};         break;
         case TokenType::NIL:              return {literal,  NULL,   PREC_NONE};         break;
-        case TokenType::OR:               return {NULL,     NULL,   PREC_NONE};         break;
+        case TokenType::OR:               return {NULL,     orFn,   PREC_OR};           break;
         case TokenType::PRINT:            return {NULL,     NULL,   PREC_NONE};         break;
         case TokenType::RETURN:           return {NULL,     NULL,   PREC_NONE};         break;
         case TokenType::TRUE:             return {literal,  NULL,   PREC_NONE};         break;
@@ -334,6 +336,25 @@ static void variable(Parser& parser)
         errorAt(parser, previous, "failed to find proper parsing thingy for getter");
     }
 }
+
+static void andFn(Parser& parser)
+{
+    i32 endJmp = emitJump(parser, OP_JUMP_IF_FALSE);
+    emitByteCode(parser, OP_POP);
+
+    parsePrecedence(parser, PREC_AND);
+    patchJump(parser, endJmp);
+}
+
+static void orFn(Parser& parser)
+{
+    i32 endJmp = emitJump(parser, OP_JUMP_IF_TRUE);
+    emitByteCode(parser, OP_POP);
+
+    parsePrecedence(parser, PREC_OR);
+    patchJump(parser, endJmp);
+}
+
 
 static void string(Parser& parser)
 {

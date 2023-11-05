@@ -36,6 +36,7 @@ enum Op : OpCodeType
     OP_STACK_POP,
 
     OP_JUMP_IF_FALSE,
+    OP_JUMP_IF_TRUE,
     OP_JUMP,
 
     OP_CONSTANT_BOOL = 0x100,
@@ -85,6 +86,7 @@ static const char* getOpCodeName(OpCodeType type)
         case OP_STACK_POP: return "OP_STACK_POP";
 
         case OP_JUMP_IF_FALSE: return "OP_JUMP_IF_FALSE";
+        case OP_JUMP_IF_TRUE: return "OP_JUMP_IF_TRUE";
         case OP_JUMP: return "OP_JUMP";
 
         case OP_CONSTANT_BOOL: return "OP_CONSTANT_BOOL";

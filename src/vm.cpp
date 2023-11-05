@@ -418,6 +418,18 @@ InterpretResult runCode(Script& script)
                 }
                 break;
             }
+            case OP_JUMP_IF_TRUE:
+            {
+                i32 offset1 = *ip++;
+                i32 offset2 = *ip++;
+                i32 offset = offset1 | (offset2 << 16);
+                if(truthy(peekStack(stack)))
+                {
+                    ip += offset;
+                }
+                break;
+            }
+
             case OP_JUMP:
             {
                 i32 offset1 = *ip++;
