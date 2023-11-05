@@ -88,19 +88,6 @@ static void runtimeError(VMRuntime runtime, const char* fmt, ...)
     resetStack(runtime.stack);
 }
 
-template <typename T>
-static T readConstant(const OpCodeType* ip, const Script& script)
-{
-    u16 lookupIndex = *ip;
-    return (*(T*)&getCurrentStructStack(script).structValueArray[lookupIndex]);
-}
-template <typename T>
-static T handleConstant(T value)
-{
-
-}
-
-
 static bool peek(std::vector<ValueTypeDesc>& descs, int distance, ValueTypeDesc** outDesc)
 {
     if(distance >= descs.size())
@@ -236,7 +223,7 @@ InterpretResult runCode(Script& script)
             case OP_CONSTANT_F64:
             {
                 u16 lookupIndex = *ip++;
-                StackType* value = &getCurrentStructStack(script).structValueArray[lookupIndex];
+                StackType* value = &script.constants.structValueArray[lookupIndex];
                 stack.push_back(*value);
                 ValueType type = ValueType((opCode & 0xf) + ValueTypeBool);
                 stackValueInfo.push_back(ValueTypeDesc{.valueType = type });
@@ -255,11 +242,11 @@ InterpretResult runCode(Script& script)
             case OP_CONSTANT_STRING:
             {
                 u16 lookupIndex = *ip++;
-                StackType value = getCurrentStructStack(script).structValueArray[lookupIndex];
+                StackType value = script.constants.structValueArray[lookupIndex];
 
                 const std::string& s = script.stringLiterals[value];
 
-                i32 index = script.stackStrings.size();
+                i32 index = (i32)script.stackStrings.size();
                 stack.push_back(index);
 
                 script.stackStrings.push_back(s);

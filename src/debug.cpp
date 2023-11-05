@@ -30,7 +30,7 @@ static i32 constantOpCode(const char* name, const Script& script, i32 offset, Va
 
     printf("%-16s %4x '", name, lookupIndex);
 
-    printValue(script, &getCurrentStructStack(script).structValueArray[lookupIndex], type);
+    printValue(script, &script.constants.structValueArray[lookupIndex], type);
     printf("'\n");
 
     return offset + 1 + 1; // getValueTypeSizeInOpCodes(type);

@@ -10,6 +10,10 @@ print foo;
 {
     let foo = 180.0 + foo;
     print foo;
+    print moo;
+    print bar;
 }
 
 print foo;
+print moo;
+print bar;

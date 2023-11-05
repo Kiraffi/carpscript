@@ -30,6 +30,9 @@ struct Script
 
     // Level 0 struct is global
     std::vector<StructStack> structStacks;
+
+    StructStack constants;
+
     //std::vector<StructDesc> structDescs;
     //std::vector<u32> structSymbolNameIndices;
     //std::vector<ValueTypeDesc> structValueTypes;

@@ -5,14 +5,11 @@
 template <typename T>
 static i32 addConsantTemplate(
     Script& script,
-    i32 structIndex,
     T constantValue,
     ValueType type,
     i32 lineNumber)
 {
-    assert(structIndex >= 0 && structIndex == script.structStacks.size() - 1);
-
-    StructStack& s = script.structStacks[structIndex];
+    StructStack& s = script.constants;
     u16 paramIndex = s.desc.parametersCount++;
     paramIndex += s.desc.parameterStartIndex;
 
@@ -73,60 +70,60 @@ i32 addStruct(Script& script, const char* name, i32 parentIndex)
 
 i32 addConstant(Script& script, i32 lineNumber)
 {
-    return addConsantTemplate(script, script.structIndex, nullptr, ValueTypeNull, lineNumber);
+    return addConsantTemplate(script, nullptr, ValueTypeNull, lineNumber);
 }
 
 i32 addConstant(Script& script, bool constantValue, i32 lineNumber)
 {
-    return addConsantTemplate(script, script.structIndex, constantValue, ValueTypeBool, lineNumber);
+    return addConsantTemplate(script, constantValue, ValueTypeBool, lineNumber);
 }
 i32 addConstant(Script& script, i8 constantValue, i32 lineNumber)
 {
-    return addConsantTemplate(script, script.structIndex, constantValue, ValueTypeI8, lineNumber);
+    return addConsantTemplate(script, constantValue, ValueTypeI8, lineNumber);
 }
 i32 addConstant(Script& script, u8 constantValue, i32 lineNumber)
 {
-    return addConsantTemplate(script, script.structIndex, constantValue, ValueTypeU8, lineNumber);
+    return addConsantTemplate(script, constantValue, ValueTypeU8, lineNumber);
 }
 i32 addConstant(Script& script, i16 constantValue, i32 lineNumber)
 {
-    return addConsantTemplate(script, script.structIndex, constantValue, ValueTypeI16, lineNumber);
+    return addConsantTemplate(script, constantValue, ValueTypeI16, lineNumber);
 }
 i32 addConstant(Script& script, u16 constantValue, i32 lineNumber)
 {
-    return addConsantTemplate(script, script.structIndex, constantValue, ValueTypeU16, lineNumber);
+    return addConsantTemplate(script, constantValue, ValueTypeU16, lineNumber);
 }
 i32 addConstant(Script& script, i32 constantValue, i32 lineNumber)
 {
-    return addConsantTemplate(script, script.structIndex, constantValue, ValueTypeI32, lineNumber);
+    return addConsantTemplate(script, constantValue, ValueTypeI32, lineNumber);
 }
 i32 addConstant(Script& script, u32 constantValue, i32 lineNumber)
 {
-    return addConsantTemplate(script, script.structIndex, constantValue, ValueTypeU32, lineNumber);
+    return addConsantTemplate(script, constantValue, ValueTypeU32, lineNumber);
 }
 i32 addConstant(Script& script, i64 constantValue, i32 lineNumber)
 {
-    return addConsantTemplate(script, script.structIndex, constantValue, ValueTypeI64, lineNumber);
+    return addConsantTemplate(script, constantValue, ValueTypeI64, lineNumber);
 }
 i32 addConstant(Script& script, u64 constantValue, i32 lineNumber)
 {
-    return addConsantTemplate(script, script.structIndex, constantValue, ValueTypeU16, lineNumber);
+    return addConsantTemplate(script, constantValue, ValueTypeU16, lineNumber);
 }
 i32 addConstant(Script& script, f32 constantValue, i32 lineNumber)
 {
-    return addConsantTemplate(script, script.structIndex, constantValue, ValueTypeF32, lineNumber);
+    return addConsantTemplate(script, constantValue, ValueTypeF32, lineNumber);
 }
 i32 addConstant(Script& script, f64 constantValue, i32 lineNumber)
 {
-    return addConsantTemplate(script, script.structIndex, constantValue, ValueTypeF64, lineNumber);
+    return addConsantTemplate(script, constantValue, ValueTypeF64, lineNumber);
 }
 
 
 i32 addConstantString(Script& script, const std::string& str, i32 lineNumber)
 {
-    i32 stringIndex = script.stringLiterals.size();
+    i32 stringIndex = (i32)script.stringLiterals.size();
     script.stringLiterals.push_back(str);
-    i32 index = addConsantTemplate(script, script.structIndex, stringIndex, ValueTypeStringLiteral, lineNumber);
+    i32 index = addConsantTemplate(script, stringIndex, ValueTypeStringLiteral, lineNumber);
     return index;
 
 }

@@ -529,7 +529,7 @@ static i32 identifierConstant(Parser& parser, const Token& token)
     bool found = false;
     for(i32 i = 0; i < sta.structSymbolNameIndices.size(); ++i)
     {
-        i32 realIndex = i;
+        i32 realIndex = (i32)sta.structSymbolNameIndices[i];
         if(realIndex < parser.script.allSymbolNames.size() && parser.script.allSymbolNames[realIndex] == str)
         {
             found = true;
