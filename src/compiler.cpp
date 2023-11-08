@@ -560,7 +560,6 @@ static void endScope(Parser &parser)
     assert(parentStructIndex >= 0 && parentStructIndex < parser.script.structStacks.size());
 
     emitByteCode(parser, OP_STACK_POP);
-
     parser.script.structIndex = parentStructIndex;
 }
 
@@ -638,14 +637,14 @@ static void statement(Parser& parser)
     {
         if(match(parser, TokenType::SEMICOLON))
         {
-            endScope(parser);
+            emitByteCode(parser, OP_STACK_POP);
             emitReturn(parser);
         }
         else
         {
             expression(parser);
             consume(parser, TokenType::SEMICOLON, "Expected ';' after return expression.");
-            endScope(parser);
+            emitByteCode(parser, OP_STACK_POP);
             emitByteCode(parser, OP_RETURN);
         }
     }
@@ -762,6 +761,8 @@ static void letDeclaration(Parser& parser)
 
 static void fnDeclaration(Parser& parser)
 {
+    i32 jumpEnd = emitJump(parser, OP_JUMP);
+
     consume(parser, TokenType::IDENTIFIER, "Expect function name.");
 
 
@@ -792,13 +793,16 @@ static void fnDeclaration(Parser& parser)
     }
     else
     {
-        i32 symbolIndex = addSymbolName(parser.script, str.c_str());
-        parser.script.functions.emplace_back();
-        Function& func = parser.script.functions.back();
-        func.functionNameIndex = symbolIndex;
-
-        i32 jumpEnd = emitJump(parser, OP_JUMP);
-        func.functionStartLocation = (i32)parser.script.byteCode.size();
+        if(foundIndex == -1)
+        {
+            i32 symbolIndex = addSymbolName(parser.script, str.c_str());
+            parser.script.functions.emplace_back();
+            Function& func = parser.script.functions.back();
+            func.functionNameIndex = symbolIndex;
+            foundIndex = parser.script.functions.size() - 1;
+        }
+        Function& func = parser.script.functions[foundIndex];
+        i32 functionStartLocation = (i32)parser.script.byteCode.size();
 
         i32 parameters = 0;
 
@@ -806,7 +810,6 @@ static void fnDeclaration(Parser& parser)
         Token tokens[256];
         i32 tokenCount = 0;
 
-        beginScope(parser);
 
         consume(parser, TokenType::LEFT_PAREN, "Expect '(' after function name.");
         if(!check(parser, TokenType::RIGHT_PAREN))
@@ -829,7 +832,6 @@ static void fnDeclaration(Parser& parser)
                     }
                 }
                 if(foundParamNameIndex != -1 && !parsedParametersBefore)
-
                 {
                     errorAtCurrent(parser, "Parameter name already defined.");
                 }
@@ -879,7 +881,7 @@ static void fnDeclaration(Parser& parser)
                 }
                 if(!parsedParametersBefore)
                 {
-                    func.functionParameterNameIndices.push_back(addSymbolName(parser.script, str.c_str()));
+                    func.functionParameterNameIndices.push_back(addSymbolName(parser.script, paramName.c_str()));
                     func.functionParamenterValueTypes.push_back(valueType);
                 }
                 else if(tokenCount > func.functionParameterNameIndices.size()
@@ -887,7 +889,7 @@ static void fnDeclaration(Parser& parser)
                 {
                     errorAtCurrent(parser, "Parameter amount mismatched from previously defined.");
                 }
-                else if(func.functionParameterNameIndices[tokenCount - 1] != foundParamNameIndex)
+                else if(tokenCount - 1 != foundParamNameIndex)
                 {
                     errorAtCurrent(parser, "Parameter names /order of names mismatched from previous define of function.");
                 }
@@ -907,37 +909,30 @@ static void fnDeclaration(Parser& parser)
                 errorAtCurrent(parser, "Function declaration does not match parameter count.");
 
             }
+            // very bad but needed for now...
+            patchJump(parser, jumpEnd);
             func.declared = true;
             return;
         }
-
+        func.functionStartLocation = functionStartLocation;
 
         consume(parser, TokenType::LEFT_BRACE, "Expect '{' before function body.");
+
+        beginScope(parser);
 
         for(int i = func.functionParameterNameIndices.size() - 1; i >= 0; --i)
         {
             i32 global = identifierConstant(parser, tokens[i]);
             defineVariable(parser, global);
         }
-        i32 oldScope = parser.script.structIndex;
-        const StructStack &current = parser.script.structStacks[parser.script.structIndex];
-        i32 parentStructIndex = current.parentStructIndex;
 
         block(parser);
-        func.defined = true;
-        if(parser.script.structIndex == oldScope)
-        {
-            endScope(parser);
-        }
-        else if(parser.script.structIndex != parentStructIndex)
-        {
-            errorAtCurrent(parser, "The scopes are not matching.");
-        }
+        endScope(parser);
+
         emitByteCode(parser, OP_RETURN);
         func.functionEndLocation = (i32)parser.script.byteCode.size();
 
         // Patch jump over to end of function.
-        i32 offset = func.functionEndLocation - func.functionStartLocation;
         patchJump(parser, jumpEnd);
 
     }

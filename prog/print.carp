@@ -87,3 +87,25 @@ print boo;
 
 print "testing";
 
+
+fn recursion(value: i32);
+
+print "";
+print "";
+recursion(1);
+
+
+fn recursion(value: i32)
+{
+    let newValue = value + 1;
+    print value;
+    if(value > 10)
+    {
+        return 1;
+    }
+    //recursion(newValue);
+    print "out of recursion";
+    print value;
+}
+
+print "at end";
