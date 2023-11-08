@@ -48,6 +48,7 @@ struct Script
     std::vector<u32> functionSymbolNameIndices;
     std::vector<ValueTypeDesc> functionValueTypes;
 
+    std::vector<i32> functionReturnAddresses;
 
     std::vector<Function> functions;
     std::vector<PatchFunctions> patchFunctions;

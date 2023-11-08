@@ -63,9 +63,9 @@ while(n < 130)
 }
 
 print fibSum;
-//let boo = 8;
+let boo = 8;
 print "Before func";
-fn fooFn(boo: i32, hoo: i32)
+fn fooFn(boo: i32, hoo: f32)
 {
    print "In foo fn";
    print moo;
@@ -77,8 +77,8 @@ fn fooFn(boo: i32, hoo: i32)
 print "Past func";
 
 //fooFn();
-print fooFn(13, 8);
-//print boo;
+print fooFn(13, 8.5);
+print boo;
 //print "out of foo";
 //print fooValue;
 //fooFn(2);

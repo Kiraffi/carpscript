@@ -220,17 +220,24 @@ InterpretResult runCode(Script& script)
             }
             case OP_RETURN:
             {
-                u64 oldValue = stack.back();
-                stack.pop_back();
-                i32 returnAddress = stack.back();
-                stack.pop_back();
+                if(script.functionReturnAddresses.size() == 0)
+                {
+                    printf("end Stack: %p value: %p\n", stack.data(), stackValueInfo.data());
+                    return InterpretResult_Ok;
+                }
+                i32 returnAddress = script.functionReturnAddresses.back();
+                script.functionReturnAddresses.pop_back();
+                //u64 oldValue = stack.back();
+                //stack.pop_back();
+                //i32 returnAddress = stack.back();
+                //stack.pop_back();
 
-                ValueTypeDesc temp = stackValueInfo.back();
-                stackValueInfo.pop_back();
-                stackValueInfo.pop_back();
+                //ValueTypeDesc temp = stackValueInfo.back();
+                //stackValueInfo.pop_back();
+                //stackValueInfo.pop_back();
 
-                stack.push_back(oldValue);
-                stackValueInfo.push_back(temp);
+                //stack.push_back(oldValue);
+                //stackValueInfo.push_back(temp);
 
                 if(returnAddress == 0 || returnAddress == byteCodeSize)
                 {

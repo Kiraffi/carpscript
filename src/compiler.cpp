@@ -220,7 +220,8 @@ static void consume(Parser& parser, TokenType type, const char* message)
 
 static void emitReturn(Parser& parser)
 {
-    emitByteCode(parser, OP_NIL);
+    emitByteCode(parser, OP_CONSTANT_I32);
+    addConstant(parser.script, 0, parser.previous.line);
     emitByteCode(parser, OP_RETURN);
 }
 
@@ -388,9 +389,9 @@ static void fnCall(Parser& parser)
     else
     {
         const Function& func = parser.script.functions[functionIndex];
-        i32 currentAddress = parser.script.byteCode.size();
-        emitByteCode(parser, OP_CONSTANT_I32);
-        i32 constantAddressPosition = addConstant(parser.script, currentAddress, parser.previous.line);
+        //i32 currentAddress = parser.script.byteCode.size();
+        //emitByteCode(parser, OP_CONSTANT_I32);
+        //i32 constantAddressPosition = addConstant(parser.script, currentAddress, parser.previous.line);
 
         i32 paramCount = 0;
         if(!check(parser, TokenType::RIGHT_PAREN))
@@ -413,7 +414,8 @@ static void fnCall(Parser& parser)
             errorAtCurrent(parser, errTxt.c_str());
         }
         i32 jmpPoint = emitJump(parser, OP_JUMP_ADDRESS_DIRECTLY);
-        parser.script.constants.structValueArray[constantAddressPosition] = parser.script.byteCode.size();
+        parser.script.functionReturnAddresses.push_back((i32)parser.script.byteCode.size());
+        //parser.script.constants.structValueArray[constantAddressPosition] = parser.script.byteCode.size();
         parser.script.patchFunctions.push_back({.functionIndex = functionIndex, .addressToPatch = jmpPoint});
     }
 }
@@ -636,14 +638,14 @@ static void statement(Parser& parser)
     {
         if(match(parser, TokenType::SEMICOLON))
         {
-            emitByteCode(parser, OP_STACK_POP);
+            endScope(parser);
             emitReturn(parser);
         }
         else
         {
             expression(parser);
             consume(parser, TokenType::SEMICOLON, "Expected ';' after return expression.");
-            emitByteCode(parser, OP_STACK_POP);
+            endScope(parser);
             emitByteCode(parser, OP_RETURN);
         }
     }
@@ -917,11 +919,20 @@ static void fnDeclaration(Parser& parser)
             i32 global = identifierConstant(parser, tokens[i]);
             defineVariable(parser, global);
         }
+        i32 oldScope = parser.script.structIndex;
+        const StructStack &current = parser.script.structStacks[parser.script.structIndex];
+        i32 parentStructIndex = current.parentStructIndex;
+
         block(parser);
         func.defined = true;
-
-        endScope(parser);
-
+        if(parser.script.structIndex == oldScope)
+        {
+            endScope(parser);
+        }
+        else if(parser.script.structIndex != parentStructIndex)
+        {
+            errorAtCurrent(parser, "The scopes are not matching.");
+        }
         emitByteCode(parser, OP_RETURN);
         func.functionEndLocation = (i32)parser.script.byteCode.size();
 
@@ -978,11 +989,8 @@ static void endCompiler(Parser& parser)
     }
 #endif
 
-    emitByteCode(parser, OP_CONSTANT_I32);
-    addConstant(parser.script, 0, parser.previous.line);
-    emitByteCode(parser, OP_RETURN);
-
-    //emitReturn(parser);
+    //emitByteCode(parser, OP_RETURN);
+    emitReturn(parser);
 }
 
 
