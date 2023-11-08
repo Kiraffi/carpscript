@@ -183,6 +183,7 @@ static i32 doBinaryOp(
 
 InterpretResult runCode(Script& script)
 {
+    const i32 byteCodeSize = (i32)script.byteCode.size();
     const OpCodeType* ipStart = (const OpCodeType*) script.byteCode.data();
     const OpCodeType* ip = ipStart;
 
@@ -194,7 +195,7 @@ InterpretResult runCode(Script& script)
     std::vector<ValueTypeDesc> stackValueInfo;
     stack.reserve(1024 * 1024);
     stackValueInfo.reserve(1024 * 1024);
-
+    printf("Stack: %p value: %p\n", stack.data(), stackValueInfo.data());
     VMRuntime vmRuntimeError = {
         .stack = stack,
         .codeStart = ipStart,
@@ -206,14 +207,31 @@ InterpretResult runCode(Script& script)
         #if DEBUG_TRACE_EXEC
             disassembleInstruction(script, i32(intptr_t(ip) - intptr_t(ipStart)) / OpCodeTypeSize);
         #endif
+        assert(stack.size() == stackValueInfo.size());
         OpCodeType opCode = *ip++;
         vmRuntimeError.ip = ip;
         switch(opCode)
         {
             case OP_END_OF_FILE:
+            {
+                return InterpretResult_RuntimeError;
+            }
             case OP_RETURN:
             {
-                return InterpretResult_Ok;
+                i32 returnAddress = stack.back();
+                stack.pop_back();
+                stackValueInfo.pop_back();
+                if(returnAddress == 0 || returnAddress == byteCodeSize)
+                {
+                    printf("end Stack: %p value: %p\n", stack.data(), stackValueInfo.data());
+                    return InterpretResult_Ok;
+                }
+                if(returnAddress < 0 || returnAddress > byteCodeSize)
+                {
+                    return InterpretResult_RuntimeError;
+                }
+                ip = ipStart + returnAddress;
+                break;
             }
             case OP_CONSTANT_BOOL:
             case OP_CONSTANT_I8:
@@ -230,7 +248,7 @@ InterpretResult runCode(Script& script)
                 u16 lookupIndex = *ip++;
                 StackType* value = &script.constants.structValueArray[lookupIndex];
                 stack.push_back(*value);
-                ValueType type = ValueType((opCode & 0xf) + ValueTypeBool);
+                ValueType type = ValueType(opCode - OP_CONSTANT_BOOL + ValueTypeBool);
                 stackValueInfo.push_back(ValueTypeDesc{.valueType = type });
                 break;
             }
@@ -439,6 +457,18 @@ InterpretResult runCode(Script& script)
                 ip += offset;
                 break;
             }
+
+            case OP_JUMP_ADDRESS_DIRECTLY:
+            {
+                i32 address1 = *ip++;
+                i32 address2 = *ip;
+
+                i32 address = address1 | (address2 << 16);
+                ip = ipStart + address;
+                break;
+            }
+
+
             case OP_ADD:
             case OP_SUB:
             case OP_MUL:

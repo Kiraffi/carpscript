@@ -16,6 +16,26 @@ struct StructStack
     i32 parentStructIndex;
 };
 
+struct Function
+{
+    // Which of the variable stacks we are using.
+    i32 structStackIndex;
+    i32 functionNameIndex;
+    i32 functionStartLocation;
+    i32 functionEndLocation;
+    std::vector<i32> functionParameterNameIndices;
+    std::vector<ValueTypeDesc> functionParamenterValueTypes;
+    bool defined;
+    bool declared;
+};
+
+
+struct PatchFunctions
+{
+    i32 functionIndex;
+    i32 addressToPatch;
+};
+
 struct Script
 {
     std::vector<OpCodeType> byteCode;
@@ -27,6 +47,10 @@ struct Script
     // Every functionDesc has 0 to n amount of these, names and valuetypes.
     std::vector<u32> functionSymbolNameIndices;
     std::vector<ValueTypeDesc> functionValueTypes;
+
+
+    std::vector<Function> functions;
+    std::vector<PatchFunctions> patchFunctions;
 
     // Level 0 struct is global
     std::vector<StructStack> structStacks;

@@ -49,8 +49,9 @@ static i32 globalVar(const char* name, const Script& script, i32 offset)
     u16 lookupIndex = script.byteCode[offset + 1];
 
     printf("%-16s %4x '", name, lookupIndex);
-
-    printf("%s", script.allSymbolNames[getCurrentStructStack(script).structSymbolNameIndices[lookupIndex]].c_str());
+    const StructStack& stack = getCurrentStructStack(script);
+    u32 symbolIndex = stack.structSymbolNameIndices[lookupIndex];
+    printf("%s", script.allSymbolNames[symbolIndex].c_str());
     printf("'\n");
 
     return offset + 1 + 1; // getValueTypeSizeInOpCodes(type);

@@ -38,8 +38,10 @@ enum Op : OpCodeType
     OP_JUMP_IF_FALSE,
     OP_JUMP_IF_TRUE,
     OP_JUMP,
+    // No offset, function call direct jump
+    OP_JUMP_ADDRESS_DIRECTLY,
 
-    OP_CONSTANT_BOOL = 0x100,
+    OP_CONSTANT_BOOL, // = 0x100,
     OP_CONSTANT_I8,
     OP_CONSTANT_U8,
     OP_CONSTANT_I16,
@@ -52,6 +54,8 @@ enum Op : OpCodeType
     OP_CONSTANT_F64,
     OP_CONSTANT_STRING,
 
+    // OP_CAST,
+    // OP_CALL,
     OP_ERROR,
 
 };
@@ -88,6 +92,7 @@ static const char* getOpCodeName(OpCodeType type)
         case OP_JUMP_IF_FALSE: return "OP_JUMP_IF_FALSE";
         case OP_JUMP_IF_TRUE: return "OP_JUMP_IF_TRUE";
         case OP_JUMP: return "OP_JUMP";
+        case OP_JUMP_ADDRESS_DIRECTLY: return "OP_JUMP_ADDRESS_DIRECTLY";
 
         case OP_CONSTANT_BOOL: return "OP_CONSTANT_BOOL";
         case OP_CONSTANT_I8: return "OP_CONSTANT_I8";

@@ -4,6 +4,7 @@
 
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h> // memcmp
 
 #if DEBUG_PRINT_CODE
 #include "debug.h"
@@ -18,6 +19,7 @@ struct Parser
     MyMemory& mem;
     Scanner& scanner;
     Script& script;
+    Token previousPrevious;
     Token previous;
     Token current;
     Token next;
@@ -49,6 +51,7 @@ struct ParseRule
     Precedence precedence;
 };
 
+static void consume(Parser& parser, TokenType type, const char* message);
 
 
 static void expression(Parser& parser);
@@ -63,6 +66,7 @@ static void string(Parser& parser);
 static void variable(Parser& parser);
 static void andFn(Parser& parser);
 static void orFn(Parser& parser);
+static void fnCall(Parser& parser);
 
 static void statement(Parser& parser);
 static void declaration(Parser& parser);
@@ -100,7 +104,7 @@ static ParseRule getRule(TokenType type)
 
     switch(type)
     {
-        case TokenType::LEFT_PAREN:       return {grouping, NULL,   PREC_NONE};         break;
+        case TokenType::LEFT_PAREN:       return {grouping, fnCall, PREC_CALL};         break;
         case TokenType::RIGHT_PAREN:      return {NULL,     NULL,   PREC_NONE};         break;
         case TokenType::LEFT_BRACE:       return {NULL,     NULL,   PREC_NONE};         break;
         case TokenType::RIGHT_BRACE:      return {NULL,     NULL,   PREC_NONE};         break;
@@ -190,6 +194,7 @@ static void error(Parser& parser, const char* message)
 
 static void advance(Parser& parser)
 {
+    parser.previousPrevious = parser.previous;
     parser.previous = parser.current;
     parser.current = parser.next;
 
@@ -215,18 +220,8 @@ static void consume(Parser& parser, TokenType type, const char* message)
 
 static void emitReturn(Parser& parser)
 {
+    emitByteCode(parser, OP_NIL);
     emitByteCode(parser, OP_RETURN);
-}
-
-static void endCompiler(Parser& parser)
-{
-#if DEBUG_PRINT_CODE
-    if(!parser.hadError)
-    {
-        disassembleCode(parser.script, "code");
-    }
-#endif
-    emitReturn(parser);
 }
 
 
@@ -280,6 +275,13 @@ static void patchJump(Parser& parser, i32 offset)
     parser.script.byteCode[offset + 1] = (jump >> 16) & 0xffff;
 }
 
+static void patchJumpAbsolute(Parser& parser, i32 codeAddressToPatch, i32 absoluteJumpAddress)
+{
+    parser.script.byteCode[codeAddressToPatch + 0] = (absoluteJumpAddress >> 0) & 0xffff;
+    parser.script.byteCode[codeAddressToPatch + 1] = (absoluteJumpAddress >> 16) & 0xffff;
+
+}
+
 static i32 namedVariable(Parser& parser, const Token& token, i32& outStructIndex)
 {
     i32 structIndex = parser.script.structIndex;
@@ -308,6 +310,8 @@ static i32 namedVariable(Parser& parser, const Token& token, i32& outStructIndex
 
 static void variable(Parser& parser)
 {
+    if(check(parser, TokenType::LEFT_PAREN))
+        return;
     i32 structIndex = -1;
     Token previous = parser.previous;
     i32 index = namedVariable(parser, previous, structIndex);
@@ -356,6 +360,63 @@ static void orFn(Parser& parser)
     patchJump(parser, endJmp);
 }
 
+static void fnCall(Parser& parser)
+{
+    if(parser.previousPrevious.type != TokenType::IDENTIFIER)
+    {
+        errorAt(parser, parser.previousPrevious, "Expected function name identifier for calling function.");
+    }
+
+    std::string findStr = getStringFromTokenName(parser.previousPrevious);
+    i32 functionIndex = -1;
+    for(i32 i = 0; i < parser.script.functions.size(); ++i)
+    {
+        i32 realIndex = parser.script.functions[i].functionNameIndex;
+        if(realIndex < parser.script.allSymbolNames.size() && parser.script.allSymbolNames[realIndex] == findStr)
+        {
+            functionIndex = i;
+            break;
+        }
+    }
+    if(functionIndex == -1)
+    {
+        std::string errStr = "Function ";
+        errStr += findStr;
+        errStr += " has not been declared.";
+        errorAt(parser, parser.previousPrevious, errStr.c_str());
+    }
+    else
+    {
+        const Function& func = parser.script.functions[functionIndex];
+        i32 currentAddress = parser.script.byteCode.size();
+        emitByteCode(parser, OP_CONSTANT_I32);
+        i32 constantAddressPosition = addConstant(parser.script, currentAddress, parser.previous.line);
+
+        i32 paramCount = 0;
+        if(!check(parser, TokenType::RIGHT_PAREN))
+        {
+            do {
+                expression(parser);
+                ++paramCount;
+
+            } while(match(parser, TokenType::COMMA));
+
+        }
+        consume(parser, TokenType::RIGHT_PAREN, "Expected ')' after function arguments");
+        if(func.functionParameterNameIndices.size() != paramCount)
+        {
+            std::string errTxt = "Expected parameter count: ";
+            errTxt += std::to_string(func.functionParameterNameIndices.size());
+            errTxt += " got ";
+            errTxt += std::to_string(paramCount);
+            errTxt += " parameters.";
+            errorAtCurrent(parser, errTxt.c_str());
+        }
+        i32 jmpPoint = emitJump(parser, OP_JUMP_ADDRESS_DIRECTLY);
+        parser.script.constants.structValueArray[constantAddressPosition] = parser.script.byteCode.size();
+        parser.script.patchFunctions.push_back({.functionIndex = functionIndex, .addressToPatch = jmpPoint});
+    }
+}
 
 static void string(Parser& parser)
 {
@@ -465,7 +526,6 @@ static void expression(Parser& parser)
             errorAt(parser, previousToken, "failed to find proper parsing thingy for assignment");
         }
     }
-
     else
     {
         parsePrecedence(parser, Precedence::PREC_ASSIGNMENT);
@@ -571,6 +631,19 @@ static void statement(Parser& parser)
     if(match(parser, TokenType::PRINT))
     {
         printStatement(parser);
+    }
+    else if(match(parser, TokenType::RETURN))
+    {
+        if(match(parser, TokenType::SEMICOLON))
+        {
+            emitReturn(parser);
+        }
+        else
+        {
+            expression(parser);
+            consume(parser, TokenType::SEMICOLON, "Expected ';' after return expression.");
+            emitByteCode(parser, OP_RETURN);
+        }
     }
     else if(match(parser, TokenType::IF))
     {
@@ -683,11 +756,190 @@ static void letDeclaration(Parser& parser)
     defineVariable(parser, global);
 }
 
+static void fnDeclaration(Parser& parser)
+{
+    consume(parser, TokenType::IDENTIFIER, "Expect function name.");
+
+
+    const StructStack& sta = parser.script.structStacks[parser.script.structIndex];
+    if(sta.parentStructIndex != -1)
+    {
+        error(parser, "Expect fns to be only on top level.");
+    }
+    std::string str = getStringFromTokenName(parser.previous);
+
+
+    i32 foundIndex = -1;
+    for(i32 i = 0; i < parser.script.functions.size(); ++i)
+    {
+        i32 realIndex = (i32)parser.script.functions[i].functionNameIndex;
+        if(realIndex < parser.script.allSymbolNames.size() && parser.script.allSymbolNames[realIndex] == str)
+        {
+            foundIndex = i;
+            break;
+        }
+    }
+    if(foundIndex >= 0 && parser.script.functions[foundIndex].defined)
+    {
+        std::string ss = "Function ";
+        ss += str;
+        ss += " has already been defined!";
+        errorAt(parser, parser.previous, ss.c_str());
+    }
+    else
+    {
+        i32 symbolIndex = addSymbolName(parser.script, str.c_str());
+        parser.script.functions.emplace_back();
+        Function& func = parser.script.functions.back();
+        func.functionNameIndex = symbolIndex;
+
+        i32 jumpEnd = emitJump(parser, OP_JUMP);
+        func.functionStartLocation = (i32)parser.script.byteCode.size();
+
+        i32 parameters = 0;
+
+        bool parsedParametersBefore = func.defined || func.declared;
+        Token tokens[256];
+        i32 tokenCount = 0;
+        consume(parser, TokenType::LEFT_PAREN, "Expect '(' after function name.");
+        if(!check(parser, TokenType::RIGHT_PAREN))
+        {
+            do
+            {
+                consume(parser, TokenType::IDENTIFIER, "Expected identifier for parameter name.");
+                Token name = parser.previous;
+                tokens[tokenCount++] = name;
+                std::string paramName = getStringFromTokenName(name);
+
+                i32 foundParamNameIndex = -1;
+                for(i32 i = 0; i < func.functionParameterNameIndices.size(); ++i)
+                {
+                    i32 realIndex = func.functionParameterNameIndices[i];
+                    if(realIndex < parser.script.allSymbolNames.size() && parser.script.allSymbolNames[realIndex] == paramName)
+                    {
+                        foundParamNameIndex = i;
+                        break;
+                    }
+                }
+                if(foundParamNameIndex != -1 && !parsedParametersBefore)
+
+                {
+                    errorAtCurrent(parser, "Parameter name already defined.");
+                }
+                consume(parser, TokenType::COLON, "Expected ':' and type for parameter.");
+                ValueTypeDesc valueType{};
+                if(match(parser, TokenType::I8))
+                {
+                    valueType = ValueTypeDesc{.valueType = ValueTypeI8 };
+                }
+                else if(match(parser,TokenType::I16))
+                {
+                    valueType = ValueTypeDesc{.valueType = ValueTypeI16 };
+                }
+                else if(match(parser, TokenType::I32))
+                {
+                    valueType = ValueTypeDesc{.valueType = ValueTypeI32 };
+                }
+                else if(match(parser, TokenType::U8))
+                {
+                    valueType = ValueTypeDesc{.valueType = ValueTypeU8 };
+                }
+                else if(match(parser,TokenType::U16))
+                {
+                    valueType = ValueTypeDesc{.valueType = ValueTypeU16 };
+                }
+                else if(match(parser, TokenType::U32))
+                {
+                    valueType = ValueTypeDesc{.valueType = ValueTypeU32 };
+                }
+                else if(match(parser,TokenType::F32))
+                {
+                    valueType = ValueTypeDesc{.valueType = ValueTypeF32 };
+                }
+                else if(match(parser,TokenType::F64))
+                {
+                    valueType = ValueTypeDesc{.valueType = ValueTypeF64 };
+                }
+                else if(check(parser, TokenType::COMMA))
+                {
+                    errorAtCurrent(parser, "Missing type for a parameter");
+                    break;
+                }
+                else
+                {
+                    errorAtCurrent(parser, "Unknown type for a parameter");
+                    break;
+                }
+                if(!parsedParametersBefore)
+                {
+                    func.functionParameterNameIndices.push_back(addSymbolName(parser.script, str.c_str()));
+                    func.functionParamenterValueTypes.push_back(valueType);
+                }
+                else if(tokenCount > func.functionParameterNameIndices.size()
+                    || tokenCount > func.functionParamenterValueTypes.size())
+                {
+                    errorAtCurrent(parser, "Parameter amount mismatched from previously defined.");
+                }
+                else if(func.functionParameterNameIndices[tokenCount - 1] != foundParamNameIndex)
+                {
+                    errorAtCurrent(parser, "Parameter names /order of names mismatched from previous define of function.");
+                }
+                else if(memcmp(&func.functionParamenterValueTypes[tokenCount - 1], &valueType, sizeof(valueType)) != 0)
+                {
+                    errorAtCurrent(parser, "Parameter names /order of names mismatched from previous define of function.");
+                }
+
+
+            } while(match(parser, TokenType::COMMA));
+        }
+        consume(parser, TokenType::RIGHT_PAREN, "Expect ')' after function parameters.");
+        if(match(parser, TokenType::SEMICOLON))
+        {
+            if(func.declared && parameters != func.functionParameterNameIndices.size())
+            {
+                errorAtCurrent(parser, "Function declaration does not match parameter count.");
+
+            }
+            func.declared = true;
+            return;
+        }
+
+
+        consume(parser, TokenType::LEFT_BRACE, "Expect '{' before function body.");
+
+        beginScope(parser);
+        for(int i = func.functionParameterNameIndices.size() - 1; i >= 0; --i)
+        {
+
+            i32 global = identifierConstant(parser, tokens[i]);
+
+            defineVariable(parser, global);
+
+        }
+        block(parser);
+        func.defined = true;
+
+        endScope(parser);
+
+        emitByteCode(parser, OP_RETURN);
+        func.functionEndLocation = (i32)parser.script.byteCode.size();
+
+        // Patch jump over to end of function.
+        i32 offset = func.functionEndLocation - func.functionStartLocation;
+        patchJump(parser, jumpEnd);
+
+    }
+}
+
 static void declaration(Parser& parser)
 {
     if(match(parser, TokenType::LET))
     {
         letDeclaration(parser);
+    }
+    else if(match(parser,TokenType::FN))
+    {
+        fnDeclaration(parser);
     }
     else
     {
@@ -698,6 +950,40 @@ static void declaration(Parser& parser)
         synchronize(parser);
     }
 }
+
+static void endCompiler(Parser& parser)
+{
+    for(const PatchFunctions& patchFns : parser.script.patchFunctions)
+    {
+        if(patchFns.addressToPatch < 0
+            || patchFns.addressToPatch >= parser.script.byteCode.size()
+            || patchFns.functionIndex < 0
+            || patchFns.functionIndex >= parser.script.functions.size())
+        {
+            errorAtCurrent(parser, "Failed to patch function calls.");
+        }
+        else
+        {
+            const Function& fn = parser.script.functions[patchFns.functionIndex];
+            patchJumpAbsolute(parser, patchFns.addressToPatch, fn.functionStartLocation);
+        }
+    }
+
+
+#if DEBUG_PRINT_CODE
+    if(!parser.hadError)
+    {
+        disassembleCode(parser.script, "code");
+    }
+#endif
+
+    emitByteCode(parser, OP_CONSTANT_I32);
+    addConstant(parser.script, 0, parser.previous.line);
+    emitByteCode(parser, OP_RETURN);
+
+    //emitReturn(parser);
+}
+
 
 bool compile(MyMemory& mem, Script& script)
 {

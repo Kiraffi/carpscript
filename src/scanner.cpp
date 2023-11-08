@@ -232,6 +232,7 @@ Token scanToken(Scanner& scanner)
         case '+': return makeToken(scanner, TokenType::PLUS); break;
         case ';': return makeToken(scanner, TokenType::SEMICOLON); break;
         case '*': return makeToken(scanner, TokenType::STAR); break;
+        case ':': return makeToken(scanner, TokenType::COLON); break;
         case '\0': return makeToken(scanner, TokenType::END_OF_FILE); break;
             // Double char checks
         case '!': return makeToken(scanner, matchChar(scanner, '=') ? TokenType::BANG_EQUAL : TokenType::BANG); break;
@@ -247,6 +248,7 @@ Token scanToken(Scanner& scanner)
                 {
                     advance(scanner);
                 }
+                return scanToken(scanner);
             }
             else
             {
