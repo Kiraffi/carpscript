@@ -195,7 +195,7 @@ InterpretResult runCode(Script& script)
     std::vector<ValueTypeDesc> stackValueInfo;
     stack.reserve(1024 * 1024);
     stackValueInfo.reserve(1024 * 1024);
-    printf("Stack: %p value: %p\n", stack.data(), stackValueInfo.data());
+
     VMRuntime vmRuntimeError = {
         .stack = stack,
         .codeStart = ipStart,
@@ -222,7 +222,6 @@ InterpretResult runCode(Script& script)
             {
                 if(script.functionReturnAddresses.size() == 0)
                 {
-                    printf("end Stack: %p value: %p\n", stack.data(), stackValueInfo.data());
                     return InterpretResult_Ok;
                 }
                 i32 returnAddress = script.functionReturnAddresses.back();

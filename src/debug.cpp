@@ -28,8 +28,21 @@ static i32 constantOpCode(const char* name, const Script& script, i32 offset, Va
 {
     u16 lookupIndex = script.byteCode[offset + 1];
 
-    printf("%-16s %4x '", name, lookupIndex);
+    printf("%-32s %8x '", name, lookupIndex);
 
+    printValue(script, &script.constants.structValueArray[lookupIndex], type);
+    printf("'\n");
+
+    return offset + 1 + 1; // getValueTypeSizeInOpCodes(type);
+}
+
+static i32 constantStringOpCode(const char* name, const Script& script, i32 offset, ValueType type)
+{
+    u16 lookupIndex = script.byteCode[offset + 1];
+
+    printf("%-32s %8x '", name, lookupIndex);
+    i32 stringIndex = script.constants.structValueArray[lookupIndex];
+    const std::string& str = script.stackStrings[stringIndex];
     printValue(script, &script.constants.structValueArray[lookupIndex], type);
     printf("'\n");
 
@@ -40,19 +53,36 @@ static i32 jumpInstruction(const char* name, const Script& script, i32 offset)
     i32 offset1 = script.byteCode[offset + 1];
     i32 offset2 = script.byteCode[offset + 2];
     i32 jump = offset1 | (offset2 << 16);
-    printf("%-16s %4d -> %d\n", name, offset,
+    printf("%-32s %8x -> %-8x\n", name, offset,
            offset + 3 + jump);
     return offset + 3;
 }
+
+static i32 directJumpInstruction(const char* name, const Script& script, i32 offset)
+{
+    i32 address1 = script.byteCode[offset + 1];
+    i32 address2 = script.byteCode[offset + 2];
+    i32 address = address1 | (address2 << 16);
+    printf("%-32s %8x -> %-8x\n", name, offset, address);
+    return offset + 3;
+}
+static i32 returnInstruction(const char* name, const Script& script, i32 offset)
+{
+    i32 returnAddress = script.functionReturnAddresses.size() > 0
+        ? script.functionReturnAddresses.back()
+        : script.byteCode.size();
+    printf("%-32s %8x -> %-8x\n", name, offset, returnAddress);
+    return offset + 1;
+}
+
+
 static i32 globalVar(const char* name, const Script& script, i32 offset)
 {
     u16 lookupIndex = script.byteCode[offset + 1];
-
-    printf("%-16s %4x '", name, lookupIndex);
     const StructStack& stack = getCurrentStructStack(script);
     u32 symbolIndex = stack.structSymbolNameIndices[lookupIndex];
-    printf("%s", script.allSymbolNames[symbolIndex].c_str());
-    printf("'\n");
+
+    printf("%-32s %4x '%s'\n", name, lookupIndex, script.allSymbolNames[symbolIndex].c_str());
 
     return offset + 1 + 1; // getValueTypeSizeInOpCodes(type);
 }
@@ -77,7 +107,6 @@ i32 disassembleInstruction(const Script& script, i32 offset)
         case OP_POP:
         case OP_PRINT:
         case OP_END_OF_FILE:
-        case OP_RETURN:
         case OP_NEGATE:
         case OP_ADD:
         case OP_SUB:
@@ -114,7 +143,13 @@ i32 disassembleInstruction(const Script& script, i32 offset)
         }
         case OP_JUMP:
         case OP_JUMP_IF_FALSE:
+
             return jumpInstruction(opName, script, offset);
+
+        case OP_JUMP_ADDRESS_DIRECTLY:
+            return directJumpInstruction(opName, script, offset);
+        case OP_RETURN:
+            return returnInstruction(opName, script, offset);
 
         default:
         {
