@@ -208,7 +208,9 @@ InterpretResult runCode(Script& script)
             disassembleInstruction(script, i32(intptr_t(ip) - intptr_t(ipStart)) / OpCodeTypeSize);
         #endif
         assert(stack.size() == stackValueInfo.size());
+        assert(ip >= ipStart && ip < ipStart + byteCodeSize);
         OpCodeType opCode = *ip++;
+        assert(ip >= ipStart && ip <= ipStart + byteCodeSize);
         vmRuntimeError.ip = ip;
         switch(opCode)
         {
@@ -218,9 +220,18 @@ InterpretResult runCode(Script& script)
             }
             case OP_RETURN:
             {
+                u64 oldValue = stack.back();
+                stack.pop_back();
                 i32 returnAddress = stack.back();
                 stack.pop_back();
+
+                ValueTypeDesc temp = stackValueInfo.back();
                 stackValueInfo.pop_back();
+                stackValueInfo.pop_back();
+
+                stack.push_back(oldValue);
+                stackValueInfo.push_back(temp);
+
                 if(returnAddress == 0 || returnAddress == byteCodeSize)
                 {
                     printf("end Stack: %p value: %p\n", stack.data(), stackValueInfo.data());

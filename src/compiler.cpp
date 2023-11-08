@@ -636,12 +636,14 @@ static void statement(Parser& parser)
     {
         if(match(parser, TokenType::SEMICOLON))
         {
+            emitByteCode(parser, OP_STACK_POP);
             emitReturn(parser);
         }
         else
         {
             expression(parser);
             consume(parser, TokenType::SEMICOLON, "Expected ';' after return expression.");
+            emitByteCode(parser, OP_STACK_POP);
             emitByteCode(parser, OP_RETURN);
         }
     }
@@ -801,6 +803,9 @@ static void fnDeclaration(Parser& parser)
         bool parsedParametersBefore = func.defined || func.declared;
         Token tokens[256];
         i32 tokenCount = 0;
+
+        beginScope(parser);
+
         consume(parser, TokenType::LEFT_PAREN, "Expect '(' after function name.");
         if(!check(parser, TokenType::RIGHT_PAREN))
         {
@@ -907,14 +912,10 @@ static void fnDeclaration(Parser& parser)
 
         consume(parser, TokenType::LEFT_BRACE, "Expect '{' before function body.");
 
-        beginScope(parser);
         for(int i = func.functionParameterNameIndices.size() - 1; i >= 0; --i)
         {
-
             i32 global = identifierConstant(parser, tokens[i]);
-
             defineVariable(parser, global);
-
         }
         block(parser);
         func.defined = true;
