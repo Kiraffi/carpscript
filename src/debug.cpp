@@ -83,9 +83,12 @@ static i32 globalVar(const char* name, const Script& script, i32 offset)
     while(lookupIndex < 0)
     {
         const StructStack &stack = script.structStacks[structIndex];
-        lookupIndex += stack.structValueArray.size();
-        if(lookupIndex < 0)
+        if(stack.parentStructIndex >= 0)
+        {
             structIndex = stack.parentStructIndex;
+            const StructStack &stack = script.structStacks[structIndex];
+            lookupIndex += stack.structValueArray.size();
+        }
     }
 
     const StructStack &stack = script.structStacks[structIndex];

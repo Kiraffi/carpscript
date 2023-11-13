@@ -216,7 +216,7 @@ InterpretResult runCode(Script& script)
         #endif
         assert(stack.size() == stackValueInfo.size());
         assert(ip >= ipStart && ip < ipStart + byteCodeSize);
-        OpCodeType opCode = *ip++;
+         OpCodeType opCode = *ip++;
         assert(ip >= ipStart && ip <= ipStart + byteCodeSize);
         vmRuntimeError.ip = ip;
         switch(opCode)

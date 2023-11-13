@@ -100,9 +100,9 @@ recursion(1);
 fn recursion(value: i32)
 {
     print value;
-    if(value > 10)
+    if(value > 3)
     {
-        return 1;
+        return 321;
     }
     recursion(value + 1);
     print "out of recursion";
