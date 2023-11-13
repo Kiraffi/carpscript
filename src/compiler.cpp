@@ -283,11 +283,13 @@ static void patchJumpAbsolute(Parser& parser, i32 codeAddressToPatch, i32 absolu
 
 }
 
-static i32 namedVariable(Parser& parser, const Token& token, i32& outStructIndex)
+static bool namedVariable(Parser& parser, const Token& token, i32& outStructIndex, i32& outIndex, i32& outDepthChange)
 {
     i32 structIndex = parser.script.structIndex;
     outStructIndex = structIndex;
     std::string searchString = getStringFromTokenName(token);
+    i32 backIndex = 0;
+    outDepthChange = 0;
     while(structIndex != -1)
     {
         const StructStack& s = parser.script.structStacks[structIndex];
@@ -296,17 +298,21 @@ static i32 namedVariable(Parser& parser, const Token& token, i32& outStructIndex
             i32 realIndex = index;
             if(parser.script.allSymbolNames[s.structSymbolNameIndices[realIndex]] == searchString)
             {
-                return index;
+                outIndex = index; // +backIndex;
+                return true;
             }
         }
+        outDepthChange++;
         structIndex = s.parentStructIndex;
         outStructIndex = structIndex;
+        if(structIndex >= 0)
+            backIndex -= parser.script.structStacks[structIndex].structValueArray.size();
     }
     std::string errorStr = "No variable: ";
     errorStr += searchString;
     errorStr += " defined for getting.";
     errorAt(parser, token, errorStr.c_str());
-    return -1;
+    return false;
 }
 
 static void variable(Parser& parser)
@@ -315,27 +321,36 @@ static void variable(Parser& parser)
         return;
     i32 structIndex = -1;
     Token previous = parser.previous;
-    i32 index = namedVariable(parser, previous, structIndex);
+    i32 index = -1;
+    i32 depthChange = 0;
+    bool success = namedVariable(parser, previous, structIndex, index, depthChange);
 
 
-    if(structIndex >= 0 && structIndex < (i32)parser.script.structStacks.size()
-       && index >= 0 && index < (i32) parser.script.structStacks[structIndex].structSymbolNameIndices.size())
+    if(success)
     {
-        bool popping = structIndex != parser.script.structIndex;
-        if(popping)
-        {
-            emitByteCode(parser, OP_STACK_SET);
-            emitByteCode(parser, Op(structIndex));
-        }
-
+        //bool popping = structIndex != parser.script.structIndex;
+        //if(popping)
+        //{
+        //    emitByteCode(parser, OP_STACK_SET);
+        //    emitByteCode(parser, Op(structIndex));
+        //}
+        //
         emitByteCode(parser, OP_GET_GLOBAL);
-        emitByteCode(parser, Op(index));
-        if(popping)
-        {
-            emitByteCode(parser, OP_STACK_SET);
-            emitByteCode(parser, Op(parser.script.structIndex));
 
-        }
+        parser.script.patchGetters.push_back({
+                .variableIndexInStruct = index,
+                .depthChange = depthChange,
+                .structIndex = parser.script.structIndex,
+                .byteCodeIndex = i32(parser.script.byteCode.size())
+            });
+
+        emitByteCode(parser, Op(index));
+        //if(popping)
+        //{
+        //    emitByteCode(parser, OP_STACK_SET);
+        //    emitByteCode(parser, Op(parser.script.structIndex));
+        //
+        //}
     }
     else
     {
@@ -502,26 +517,35 @@ static void expression(Parser& parser)
         expression(parser);
 
         i32 structIndex = -1;
-        i32 index = namedVariable(parser, previousToken, structIndex);
+        i32 index = -1;
+        i32 depthChange = 0;
+        bool success = namedVariable(parser, previousToken, structIndex, index, depthChange);
 
-        if(structIndex >= 0 && structIndex < (i32)parser.script.structStacks.size()
-            && index >= 0 && index < (i32) parser.script.structStacks[structIndex].structSymbolNameIndices.size())
+        if(success)
         {
-            bool popping = structIndex != parser.script.structIndex;
-            if(popping)
-            {
-                emitByteCode(parser, OP_STACK_SET);
-                emitByteCode(parser, Op(structIndex));
-
-            }
+            //bool popping = structIndex != parser.script.structIndex;
+            //if(popping)
+            //{
+            //    emitByteCode(parser, OP_STACK_SET);
+            //    emitByteCode(parser, Op(structIndex));
+            //
+            //}
             emitByteCode(parser, OP_SET_GLOBAL);
-            emitByteCode(parser, Op(index));
-            if(popping)
-            {
-                emitByteCode(parser, OP_STACK_SET);
-                emitByteCode(parser, Op(parser.script.structIndex));
 
-            }
+            parser.script.patchGetters.push_back({
+                .variableIndexInStruct = index,
+                .depthChange = depthChange,
+                .structIndex = parser.script.structIndex,
+                .byteCodeIndex = i32(parser.script.byteCode.size())
+            });
+
+            emitByteCode(parser, Op(index));
+            //if(popping)
+            //{
+            //    emitByteCode(parser, OP_STACK_SET);
+            //    emitByteCode(parser, Op(parser.script.structIndex));
+            //
+            //}
         }
         else
         {
@@ -975,7 +999,29 @@ static void endCompiler(Parser& parser)
             patchJumpAbsolute(parser, patchFns.addressToPatch, fn.functionStartLocation);
         }
     }
+    for(const PatchGetter &patchGet : parser.script.patchGetters)
+    {
+        if(patchGet.byteCodeIndex < 0 || patchGet.byteCodeIndex > parser.script.byteCode.size())
+        {
+            errorAtCurrent(parser, "Failed to patch function calls.");
 
+        }
+        else
+        {
+            i32 offset = 0;
+            i32 depthChange = patchGet.depthChange;
+            i32 structIndex = patchGet.structIndex;
+            while(depthChange > 0)
+            {
+                structIndex = parser.script.structStacks[structIndex].parentStructIndex;
+                offset -= parser.script.structStacks[structIndex].structValueArray.size();
+                --depthChange;
+            }
+
+            parser.script.byteCode[patchGet.byteCodeIndex] = offset + patchGet.variableIndexInStruct;
+        }
+    }
+    
 
 #if DEBUG_PRINT_CODE
     if(!parser.hadError)

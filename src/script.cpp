@@ -27,7 +27,7 @@ static i32 addConsantTemplate(
         s.structValueArray.emplace_back(0);
     }
 
-    u64* p = &s.structValueArray[memPos];
+    TypeOfValue* p = &s.structValueArray[memPos];
     T* t = (T*)p;
     *t = constantValue;
 

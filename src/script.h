@@ -12,7 +12,7 @@ struct StructStack
     StructDesc desc;
     std::vector<u32> structSymbolNameIndices;
     std::vector<ValueTypeDesc> structValueTypes;
-    std::vector<u64> structValueArray;
+    std::vector<TypeOfValue> structValueArray;
     i32 parentStructIndex;
 };
 
@@ -36,6 +36,14 @@ struct PatchFunctions
     i32 addressToPatch;
 };
 
+struct PatchGetter
+{
+    i32 variableIndexInStruct;
+    i32 depthChange;
+    i32 structIndex;
+    i32 byteCodeIndex;
+};
+
 struct Script
 {
     std::vector<OpCodeType> byteCode;
@@ -53,8 +61,12 @@ struct Script
     std::vector<Function> functions;
     std::vector<PatchFunctions> patchFunctions;
 
+    std::vector<PatchGetter> patchGetters;
+
     // Level 0 struct is global
     std::vector<StructStack> structStacks;
+
+    StructStack locals;
 
     StructStack constants;
 
@@ -70,6 +82,7 @@ struct Script
     std::vector<std::string> stackStrings;
 
     i32 structIndex;
+    i32 previousLocalStartIndex;
 };
 
 //template<typename T>

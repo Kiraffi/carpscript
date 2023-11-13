@@ -10,31 +10,29 @@
 #include <stdarg.h> // va_start
 #include <string.h> // memcpy
 
-using StackType = u64;
-
 struct VMRuntime
 {
-    std::vector<StackType> &stack;
+    std::vector<TypeOfValue> &stack;
     const OpCodeType *codeStart;
     const OpCodeType *ip;
     const i32* lines;
     i32 line;
 };
 
-static bool truthy(StackType value)
+static bool truthy(TypeOfValue value)
 {
     return value != 0;
 }
 
 struct HelperStruct
 {
-    StackType valueA;
-    StackType valueB;
+    TypeOfValue valueA;
+    TypeOfValue valueB;
     ValueTypeDesc descA;
     ValueTypeDesc descB;
 };
 
-static HelperStruct valuesEqualHelper(std::vector<StackType>& stack, std::vector<ValueTypeDesc> &stackValueInfo)
+static HelperStruct valuesEqualHelper(std::vector<TypeOfValue>& stack, std::vector<ValueTypeDesc> &stackValueInfo)
 {
     HelperStruct result;
     result.valueB = stack.back();
@@ -48,7 +46,7 @@ static HelperStruct valuesEqualHelper(std::vector<StackType>& stack, std::vector
     return result;
 }
 
-static void valuesEqual(Script& script, std::vector<StackType>& stack, std::vector<ValueTypeDesc> &stackValueInfo)
+static void valuesEqual(Script& script, std::vector<TypeOfValue>& stack, std::vector<ValueTypeDesc> &stackValueInfo)
 {
     HelperStruct s = valuesEqualHelper(stack, stackValueInfo);
     bool isTrue = s.descB.valueType == s.descA.valueType;
@@ -64,12 +62,12 @@ static void valuesEqual(Script& script, std::vector<StackType>& stack, std::vect
 
 }
 
-static i32 getInstructionIndex(const OpCodeType* current, const OpCodeType* start)
+static size_t getInstructionIndex(const OpCodeType* current, const OpCodeType* start)
 {
-    return i32(intptr_t(current) - intptr_t(start)) / OpCodeTypeSize;
+    return size_t(intptr_t(current) - intptr_t(start)) / OpCodeTypeSize;
 }
 
-static void resetStack(std::vector<StackType> &stack)
+static void resetStack(std::vector<TypeOfValue> &stack)
 {
     stack.clear();
 }
@@ -88,7 +86,7 @@ static void runtimeError(VMRuntime runtime, const char* fmt, ...)
     resetStack(runtime.stack);
 }
 
-static StackType peekStack(const std::vector<StackType>& stack)
+static TypeOfValue peekStack(const std::vector<TypeOfValue>& stack)
 {
     return stack[stack.size() - 1];
 }
@@ -105,11 +103,11 @@ static bool peek(std::vector<ValueTypeDesc>& descs, int distance, ValueTypeDesc*
 }
 
 template <typename T>
-static StackType doBinaryOpOp(const StackType l, const StackType r, OpCodeType opCode)
+static TypeOfValue doBinaryOpOp(const TypeOfValue l, const TypeOfValue r, OpCodeType opCode)
 {
     const T& lt = *((const T*)&l);
     const T& rt = *((const T*)&r);
-    StackType valueStackType = 0;
+    TypeOfValue valueStackType = 0;
     T& value = *((T*)&valueStackType);
 
     switch(opCode)
@@ -123,12 +121,12 @@ static StackType doBinaryOpOp(const StackType l, const StackType r, OpCodeType o
         case OP_LESSER: value = lt < rt; break;
         default: break;
     }
-    StackType returnValue = *((StackType*)(&value));
+    TypeOfValue returnValue = *((TypeOfValue*)(&value));
     return returnValue;
 }
 
 static i32 doBinaryOp(
-    std::vector<StackType>& stack,
+    std::vector<TypeOfValue>& stack,
     std::vector<ValueTypeDesc>& stackValueInfo,
     OpCodeType opCode)
 {
@@ -140,7 +138,7 @@ static i32 doBinaryOp(
     {
         return 1;
     }
-    StackType finalValue;
+    TypeOfValue finalValue;
     ValueTypeDesc newDesc = values.descA;
     switch(values.descA.valueType)
     {
@@ -191,10 +189,19 @@ InterpretResult runCode(Script& script)
 
     // Does stack need type info stack?
     u32 stackIndex = 0;
-    std::vector<StackType> stack;
+    std::vector<TypeOfValue> stack;
     std::vector<ValueTypeDesc> stackValueInfo;
     stack.reserve(1024 * 1024);
     stackValueInfo.reserve(1024 * 1024);
+
+    i32& lastLocalAmount = script.previousLocalStartIndex;
+    //i32 localDepth = 0;
+    
+    lastLocalAmount = script.locals.structValueArray.size();
+    const std::vector<TypeOfValue> &valueArray = getCurrentStructStack(script).structValueArray;
+    const std::vector<ValueTypeDesc> &valueTypeArray = getCurrentStructStack(script).structValueTypes;
+    script.locals.structValueArray.insert(script.locals.structValueArray.end(), valueArray.begin(), valueArray.end());
+    script.locals.structValueTypes.insert(script.locals.structValueTypes.end(), valueTypeArray.begin(), valueTypeArray.end());
 
     VMRuntime vmRuntimeError = {
         .stack = stack,
@@ -226,17 +233,6 @@ InterpretResult runCode(Script& script)
                 }
                 i32 returnAddress = script.functionReturnAddresses.back();
                 script.functionReturnAddresses.pop_back();
-                //u64 oldValue = stack.back();
-                //stack.pop_back();
-                //i32 returnAddress = stack.back();
-                //stack.pop_back();
-
-                //ValueTypeDesc temp = stackValueInfo.back();
-                //stackValueInfo.pop_back();
-                //stackValueInfo.pop_back();
-
-                //stack.push_back(oldValue);
-                //stackValueInfo.push_back(temp);
 
                 if(returnAddress == 0 || returnAddress == byteCodeSize)
                 {
@@ -263,7 +259,7 @@ InterpretResult runCode(Script& script)
             case OP_CONSTANT_F64:
             {
                 u16 lookupIndex = *ip++;
-                StackType* value = &script.constants.structValueArray[lookupIndex];
+                TypeOfValue* value = &script.constants.structValueArray[lookupIndex];
                 stack.push_back(*value);
                 ValueType type = ValueType(opCode - OP_CONSTANT_BOOL + ValueTypeBool);
                 stackValueInfo.push_back(ValueTypeDesc{.valueType = type });
@@ -271,7 +267,7 @@ InterpretResult runCode(Script& script)
             }
             case OP_NOT:
             {
-                StackType value = stack.back();
+                TypeOfValue value = stack.back();
                 stack.pop_back();
 
                 stack.push_back(!truthy(value));
@@ -282,7 +278,7 @@ InterpretResult runCode(Script& script)
             case OP_CONSTANT_STRING:
             {
                 u16 lookupIndex = *ip++;
-                StackType value = script.constants.structValueArray[lookupIndex];
+                TypeOfValue value = script.constants.structValueArray[lookupIndex];
 
                 const std::string& s = script.stringLiterals[value];
 
@@ -316,7 +312,7 @@ InterpretResult runCode(Script& script)
                 }
                 if(desc->valueType >= ValueTypeI8 && desc->valueType <= ValueTypeF64)
                 {
-                    StackType value = stack.back();
+                    TypeOfValue value = stack.back();
                     stack.pop_back();
                     stack.push_back(-value);
                     break;
@@ -336,7 +332,7 @@ InterpretResult runCode(Script& script)
             }
             case OP_PRINT:
             {
-                StackType value = stack.back();
+                TypeOfValue value = stack.back();
                 stack.pop_back();
 
                 ValueTypeDesc valueDesc = stackValueInfo.back();
@@ -356,10 +352,15 @@ InterpretResult runCode(Script& script)
             case OP_DEFINE_GLOBAL:
             {
                 u16 lookupIndex = *ip++;
-
-
-                StackType& value = getCurrentStructStack(script).structValueArray[lookupIndex];
-
+                TypeOfValue *value = nullptr;
+                //if(localDepth == 0)
+                //{
+                //    value = &getCurrentStructStack(script).structValueArray[lookupIndex];
+                //}
+                //else
+                {
+                    value = &script.locals.structValueArray[i32(lookupIndex) + lastLocalAmount]; //getCurrentStructStack(script).structValueArray[lookupIndex];
+                }
                 ValueTypeDesc* descA;
 
                 if(!peek(stackValueInfo, 0, &descA))
@@ -368,8 +369,15 @@ InterpretResult runCode(Script& script)
                                  "Trying to peek stack that does not have enough indices: %i", 1);
                     return InterpretResult_RuntimeError;
                 }
-                getCurrentStructStack(script).structValueTypes[lookupIndex] = *descA;
-                value = stack.back();
+                //if(localDepth == 0)
+                //{
+                //    getCurrentStructStack(script).structValueTypes[lookupIndex] = *descA;
+                //}
+                //else
+                {
+                    script.locals.structValueTypes[i32(lookupIndex) + lastLocalAmount] = *descA;
+                }
+                *value = stack.back();
                 stack.pop_back();
                 stackValueInfo.pop_back();
                 break;
@@ -377,35 +385,56 @@ InterpretResult runCode(Script& script)
 
             case OP_GET_GLOBAL:
             {
-                u16 lookupIndex = *ip++;
-                StackType value = getCurrentStructStack(script).structValueArray[lookupIndex];
-                ValueTypeDesc desc = getCurrentStructStack(script).structValueTypes[lookupIndex];
-                stack.push_back(value);
-                stackValueInfo.push_back(desc);
+                i16 lookupIndex = i16(*ip++);
+                TypeOfValue *value = nullptr;
+                ValueTypeDesc *desc = nullptr;
+
+                //if(localDepth == 0)
+                //{
+                //    value = &getCurrentStructStack(script).structValueArray[lookupIndex];
+                //    desc = &getCurrentStructStack(script).structValueTypes[lookupIndex];
+                //}
+                //else
+                {
+                    value = &script.locals.structValueArray[i32(lookupIndex) + lastLocalAmount];
+                    desc = &script.locals.structValueTypes[i32(lookupIndex) + lastLocalAmount];
+                }
+                stack.push_back(*value);
+                stackValueInfo.push_back(*desc);
                 break;
             }
             case OP_SET_GLOBAL:
             {
-                u16 lookupIndex = *ip++;
-                StackType& value = getCurrentStructStack(script).structValueArray[lookupIndex];
-                ValueTypeDesc desc = getCurrentStructStack(script).structValueTypes[lookupIndex];
+                i16 lookupIndex = i16(*ip++);
+                TypeOfValue *value = nullptr;
+                ValueTypeDesc *desc = nullptr;
 
-                value = stack.back();
+                //if(localDepth == 0)
+                //{
+                //    value = &getCurrentStructStack(script).structValueArray[lookupIndex];
+                //    desc = &getCurrentStructStack(script).structValueTypes[lookupIndex];
+                //}
+                //else
+                {
+                    value = &script.locals.structValueArray[i32(lookupIndex) + lastLocalAmount];
+                    desc = &script.locals.structValueTypes[i32(lookupIndex) + lastLocalAmount];
+                }
+                *value = stack.back();
                 stack.pop_back();
 
                 ValueTypeDesc otherDesc = stackValueInfo.back();
-                assert(desc.valueType == otherDesc.valueType);
+                assert(desc->valueType == otherDesc.valueType);
                 stackValueInfo.pop_back();
 
 
-                stack.push_back(value);
-                stackValueInfo.push_back(desc);
+                stack.push_back(*value);
+                stackValueInfo.push_back(*desc);
 
-                if(desc.valueType != otherDesc.valueType)
+                if(desc->valueType != otherDesc.valueType)
                 {
                     runtimeError(VMRuntime {.stack = stack, .codeStart = ipStart, .ip = ip,
                         .lines = lines, },
-                        "Valuetypes mismatch for assignment: %i vs %i!", desc.valueType, otherDesc.valueType);
+                        "Valuetypes mismatch for assignment: %i vs %i!", desc->valueType, otherDesc.valueType);
                     return InterpretResult_RuntimeError;
 
                 }
@@ -424,6 +453,13 @@ InterpretResult runCode(Script& script)
                 }
 
                 script.structIndex = (i32)lookupIndex;
+
+                lastLocalAmount = script.locals.structValueArray.size();
+                const std::vector<TypeOfValue>& valueArray = getCurrentStructStack(script).structValueArray;
+                const std::vector<ValueTypeDesc>& valueTypeArray = getCurrentStructStack(script).structValueTypes;
+                script.locals.structValueArray.insert(script.locals.structValueArray.end(), valueArray.begin(), valueArray.end());
+                script.locals.structValueTypes.insert(script.locals.structValueTypes.end(), valueTypeArray.begin(), valueTypeArray.end());
+                //localDepth++;
                 break;
             }
             case OP_STACK_POP:
@@ -439,6 +475,14 @@ InterpretResult runCode(Script& script)
                 else
                 {
                     script.structIndex = parentIndex;
+                    const std::vector<TypeOfValue> &valueArray = getCurrentStructStack(script).structValueArray;
+                    i32 currentSize = i32(script.locals.structValueArray.size());
+                    script.locals.structValueArray.erase(script.locals.structValueArray.begin() + lastLocalAmount, script.locals.structValueArray.end());
+                    script.locals.structValueTypes.erase(script.locals.structValueTypes.begin() + lastLocalAmount, script.locals.structValueTypes.end());
+
+                    lastLocalAmount = script.locals.structValueArray.size() - valueArray.size();
+                    //localDepth--;
+                    //assert(localDepth >= 0);
                 }
                 break;
             }

@@ -78,10 +78,21 @@ static i32 returnInstruction(const char* name, const Script& script, i32 offset)
 
 static i32 globalVar(const char* name, const Script& script, i32 offset)
 {
-    u16 lookupIndex = script.byteCode[offset + 1];
-    const StructStack& stack = getCurrentStructStack(script);
-    u32 symbolIndex = stack.structSymbolNameIndices[lookupIndex];
+    i32 structIndex = script.structIndex;
+    i16 lookupIndex = i16(script.byteCode[offset + 1]);
+    while(lookupIndex < 0)
+    {
+        const StructStack &stack = script.structStacks[structIndex];
+        lookupIndex += stack.structValueArray.size();
+        if(lookupIndex < 0)
+            structIndex = stack.parentStructIndex;
+    }
 
+    const StructStack &stack = script.structStacks[structIndex];
+    u32 symbolIndex = stack.structSymbolNameIndices[lookupIndex];
+    
+    //u32 symbolIndex = script.locals.structSymbolNameIndices[script.previousLocalStartIndex + lookupIndex];
+    
     printf("%-32s %4x '%s'\n", name, lookupIndex, script.allSymbolNames[symbolIndex].c_str());
 
     return offset + 1 + 1; // getValueTypeSizeInOpCodes(type);

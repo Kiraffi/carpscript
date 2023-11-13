@@ -12,6 +12,7 @@
 #define DEBUG_TRACE_EXEC 0
 
 struct Script;
+using TypeOfValue = u64;
 
 enum ValueType: u8
 {
@@ -124,7 +125,7 @@ struct StructDesc
     u32 structSize;
 };
 
-void printValue(const Script& script, const u64* value, ValueType type);
+void printValue(const Script& script, const TypeOfValue* value, ValueType type);
 std::string getStringFromTokenName(const Token& token);
 
 
