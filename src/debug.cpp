@@ -5,7 +5,7 @@
 #include "op.h"
 #include "script.h"
 
-void disassembleCode(const Script& script, const char* name)
+void disassembleCode(Script& script, const char* name)
 {
 
     printf("== %s ==\n", name);
@@ -13,7 +13,7 @@ void disassembleCode(const Script& script, const char* name)
     i32 length = (i32)script.byteCode.size();
     while(offset < length)
     {
-        offset = disassembleInstruction(script, offset);
+        offset = disassembleInstruction(script, offset, true);
     }
     printf("== End of %s ==\n\n", name);
 }
@@ -92,17 +92,24 @@ static i32 globalVar(const char* name, const Script& script, i32 offset)
     }
 
     const StructStack &stack = script.structStacks[structIndex];
-    u32 symbolIndex = stack.structSymbolNameIndices[lookupIndex];
-    
-    //u32 symbolIndex = script.locals.structSymbolNameIndices[script.previousLocalStartIndex + lookupIndex];
-    
-    printf("%-32s %4x '%s'\n", name, lookupIndex, script.allSymbolNames[symbolIndex].c_str());
+    if(lookupIndex < stack.structSymbolNameIndices.size())
+    {
+        u32 symbolIndex = stack.structSymbolNameIndices[lookupIndex];
 
+        //u32 symbolIndex = script.locals.structSymbolNameIndices[script.previousLocalStartIndex + lookupIndex];
+
+        printf("%-32s %4x '%s'\n", name, lookupIndex, script.allSymbolNames[symbolIndex].c_str());
+    }
+    else
+    {
+        printf("%-32s %4x '%s'\n", name, lookupIndex, "UNKNOWN");
+
+    }
     return offset + 1 + 1; // getValueTypeSizeInOpCodes(type);
 }
 
 
-i32 disassembleInstruction(const Script& script, i32 offset)
+i32 disassembleInstruction(Script& script, i32 offset, bool executeStackInPop)
 {
     printf("%05x ", offset);
     if(offset > 0 && script.byteCodeLines[offset - 1] == script.byteCodeLines[offset])
@@ -115,6 +122,27 @@ i32 disassembleInstruction(const Script& script, i32 offset)
     }
     OpCodeType opCode = script.byteCode[offset];
     const char* opName = getOpCodeName(opCode);
+
+    if(executeStackInPop)
+    {
+        if(opCode == OP_STACK_POP)
+        {
+            i32 parentIndex = getCurrentStructStack(script).parentStructIndex;
+            if(parentIndex < 0 || parentIndex >= (i32)script.structStacks.size())
+            {
+                parentIndex = 0;
+            }
+            script.structIndex = parentIndex;
+        }
+        else if(opCode == OP_STACK_SET)
+        {
+            u16 lookupIndex = script.byteCode[offset + 1];
+            assert(!(lookupIndex < 0 || lookupIndex >= (i32) script.structStacks.size()));
+
+            script.structIndex = (i32) lookupIndex;
+        }
+    }
+
     switch(opCode)
     {
         case OP_STACK_POP:
@@ -160,6 +188,7 @@ i32 disassembleInstruction(const Script& script, i32 offset)
 
             return jumpInstruction(opName, script, offset);
 
+        case OP_CODE_PUSH_RETURN_ADDRESS:
         case OP_JUMP_ADDRESS_DIRECTLY:
             return directJumpInstruction(opName, script, offset);
         case OP_RETURN:

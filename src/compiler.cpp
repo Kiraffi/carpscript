@@ -428,8 +428,13 @@ static void fnCall(Parser& parser)
             errTxt += " parameters.";
             errorAtCurrent(parser, errTxt.c_str());
         }
+        emitByteCode(parser, OP_CODE_PUSH_RETURN_ADDRESS);
+        i32 returnAddress = parser.script.byteCode.size() + 5;
+        emitByteCode(parser, Op(returnAddress & 0xffff));
+        emitByteCode(parser, Op(returnAddress >> 16));
+
         i32 jmpPoint = emitJump(parser, OP_JUMP_ADDRESS_DIRECTLY);
-        parser.script.functionReturnAddresses.push_back((i32)parser.script.byteCode.size());
+        //parser.script.functionReturnAddresses.push_back((i32)parser.script.byteCode.size());
         //parser.script.constants.structValueArray[constantAddressPosition] = parser.script.byteCode.size();
         parser.script.patchFunctions.push_back({.functionIndex = functionIndex, .addressToPatch = jmpPoint});
     }
@@ -661,14 +666,24 @@ static void statement(Parser& parser)
     {
         if(match(parser, TokenType::SEMICOLON))
         {
-            emitByteCode(parser, OP_STACK_POP);
+            i32 structIndex = parser.script.structIndex;
+            while(structIndex > 0)
+            {
+                emitByteCode(parser, OP_STACK_POP);
+                structIndex = parser.script.structStacks[structIndex].parentStructIndex;
+            }
             emitReturn(parser);
         }
         else
         {
             expression(parser);
             consume(parser, TokenType::SEMICOLON, "Expected ';' after return expression.");
-            emitByteCode(parser, OP_STACK_POP);
+            i32 structIndex = parser.script.structIndex;
+            while(structIndex > 0)
+            {
+                emitByteCode(parser, OP_STACK_POP);
+                structIndex = parser.script.structStacks[structIndex].parentStructIndex;
+            }
             emitByteCode(parser, OP_RETURN);
         }
     }
@@ -785,7 +800,6 @@ static void letDeclaration(Parser& parser)
 
 static void fnDeclaration(Parser& parser)
 {
-    i32 jumpEnd = emitJump(parser, OP_JUMP);
 
     consume(parser, TokenType::IDENTIFIER, "Expect function name.");
 
@@ -826,7 +840,6 @@ static void fnDeclaration(Parser& parser)
             foundIndex = parser.script.functions.size() - 1;
         }
         Function& func = parser.script.functions[foundIndex];
-        i32 functionStartLocation = (i32)parser.script.byteCode.size();
 
         i32 parameters = 0;
 
@@ -934,10 +947,13 @@ static void fnDeclaration(Parser& parser)
 
             }
             // very bad but needed for now...
-            patchJump(parser, jumpEnd);
+            //patchJump(parser, jumpEnd);
             func.declared = true;
             return;
         }
+        i32 jumpEnd = emitJump(parser, OP_JUMP);
+        i32 functionStartLocation = (i32)parser.script.byteCode.size();
+
         func.functionStartLocation = functionStartLocation;
 
         consume(parser, TokenType::LEFT_BRACE, "Expect '{' before function body.");
@@ -1023,14 +1039,16 @@ static void endCompiler(Parser& parser)
     }
     
 
+
+    //emitByteCode(parser, OP_RETURN);
+
 #if DEBUG_PRINT_CODE
     if(!parser.hadError)
     {
         disassembleCode(parser.script, "code");
+        parser.script.structIndex = 0;
     }
 #endif
-
-    //emitByteCode(parser, OP_RETURN);
     emitReturn(parser);
 }
 

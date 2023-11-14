@@ -6,6 +6,6 @@
 
 struct Script;
 
-void disassembleCode(const Script& script, const char* name);
-i32 disassembleInstruction(const Script& script, i32 offset);
+void disassembleCode(Script& script, const char* name);
+i32 disassembleInstruction(Script& script, i32 offset, bool executeStackInPop = false);
 

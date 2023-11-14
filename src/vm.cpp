@@ -191,13 +191,17 @@ InterpretResult runCode(Script& script)
     u32 stackIndex = 0;
     std::vector<TypeOfValue> stack;
     std::vector<ValueTypeDesc> stackValueInfo;
+
+    std::vector<u16> localValueAmounts;
+    std::vector<i32> parentStructIndices;
+
     stack.reserve(1024 * 1024);
     stackValueInfo.reserve(1024 * 1024);
 
     i32& lastLocalAmount = script.previousLocalStartIndex;
     //i32 localDepth = 0;
     
-    lastLocalAmount = script.locals.structValueArray.size();
+    lastLocalAmount = 0;
     const std::vector<TypeOfValue> &valueArray = getCurrentStructStack(script).structValueArray;
     const std::vector<ValueTypeDesc> &valueTypeArray = getCurrentStructStack(script).structValueTypes;
     script.locals.structValueArray.insert(script.locals.structValueArray.end(), valueArray.begin(), valueArray.end());
@@ -451,20 +455,23 @@ InterpretResult runCode(Script& script)
                                  "Stack has no parent index!");
                     return InterpretResult_RuntimeError;
                 }
-
+                parentStructIndices.push_back(script.structIndex);
                 script.structIndex = (i32)lookupIndex;
-
+                localValueAmounts.push_back(lastLocalAmount);
                 lastLocalAmount = script.locals.structValueArray.size();
                 const std::vector<TypeOfValue>& valueArray = getCurrentStructStack(script).structValueArray;
                 const std::vector<ValueTypeDesc>& valueTypeArray = getCurrentStructStack(script).structValueTypes;
                 script.locals.structValueArray.insert(script.locals.structValueArray.end(), valueArray.begin(), valueArray.end());
                 script.locals.structValueTypes.insert(script.locals.structValueTypes.end(), valueTypeArray.begin(), valueTypeArray.end());
+
                 //localDepth++;
                 break;
             }
             case OP_STACK_POP:
             {
-                i32 parentIndex = getCurrentStructStack(script).parentStructIndex;
+                i32 parentIndex = parentStructIndices.back();
+                parentStructIndices.pop_back();
+                //i32 parentIndex = getCurrentStructStack(script).parentStructIndex;
                 if(parentIndex < 0 || parentIndex >= (i32)script.structStacks.size())
                 {
                     runtimeError(VMRuntime {.stack = stack, .codeStart = ipStart, .ip = ip,
@@ -475,12 +482,15 @@ InterpretResult runCode(Script& script)
                 else
                 {
                     script.structIndex = parentIndex;
-                    const std::vector<TypeOfValue> &valueArray = getCurrentStructStack(script).structValueArray;
-                    i32 currentSize = i32(script.locals.structValueArray.size());
+                    //const std::vector<TypeOfValue> &valueArray = getCurrentStructStack(script).structValueArray;
+                    //i32 currentSize = i32(script.locals.structValueArray.size());
                     script.locals.structValueArray.erase(script.locals.structValueArray.begin() + lastLocalAmount, script.locals.structValueArray.end());
                     script.locals.structValueTypes.erase(script.locals.structValueTypes.begin() + lastLocalAmount, script.locals.structValueTypes.end());
 
-                    lastLocalAmount = script.locals.structValueArray.size() - valueArray.size();
+
+
+                    lastLocalAmount = localValueAmounts.back();
+                    localValueAmounts.pop_back();
                     //localDepth--;
                     //assert(localDepth >= 0);
                 }
@@ -528,7 +538,15 @@ InterpretResult runCode(Script& script)
                 ip = ipStart + address;
                 break;
             }
+            case OP_CODE_PUSH_RETURN_ADDRESS:
+            {
+                i32 address1 = *ip++;
+                i32 address2 = *ip++;
 
+                i32 address = address1 | (address2 << 16);
+                script.functionReturnAddresses.push_back(address);
+                break;
+            }
 
             case OP_ADD:
             case OP_SUB:
