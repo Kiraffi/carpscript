@@ -218,6 +218,17 @@ InterpretResult runCode(Script& script)
         #if DEBUG_TRACE_EXEC
             disassembleInstruction(script, i32(intptr_t(ip) - intptr_t(ipStart)) / OpCodeTypeSize);
         #endif
+        #if DEBUG_PRINT_LOCALS
+            printf("\n--- Locals ---\n");
+            for(i32 i = 0; i < script.locals.structValueArray.size(); ++i)
+            {
+                const StructStack& local = script.locals;
+                printf("%i: Type: %i, value %i\n",
+                       i, local.structValueTypes[i], local.structValueArray[i]);
+            }
+            printf("-- Locals end ---\n");
+        #endif
+
         assert(stack.size() == stackValueInfo.size());
         assert(ip >= ipStart && ip < ipStart + byteCodeSize);
          OpCodeType opCode = *ip++;
@@ -355,15 +366,20 @@ InterpretResult runCode(Script& script)
             }
             case OP_DEFINE_GLOBAL:
             {
-                u16 lookupIndex = *ip++;
+                i16 lookupIndex = (i16)*ip++;
                 TypeOfValue *value = nullptr;
                 //if(localDepth == 0)
                 //{
                 //    value = &getCurrentStructStack(script).structValueArray[lookupIndex];
                 //}
                 //else
+                i32 arrSize = (i32)script.locals.structValueArray.size();
+                i32 checkIndex = arrSize + lookupIndex;
+                checkIndex %= arrSize;
                 {
-                    value = &script.locals.structValueArray[i32(lookupIndex) + lastLocalAmount]; //getCurrentStructStack(script).structValueArray[lookupIndex];
+
+                    value = &script.locals.structValueArray[checkIndex];
+                    //value = &script.locals.structValueArray[i32(lookupIndex) + lastLocalAmount]; //getCurrentStructStack(script).structValueArray[lookupIndex];
                 }
                 ValueTypeDesc* descA;
 
@@ -379,7 +395,9 @@ InterpretResult runCode(Script& script)
                 //}
                 //else
                 {
-                    script.locals.structValueTypes[i32(lookupIndex) + lastLocalAmount] = *descA;
+
+                    script.locals.structValueTypes[checkIndex] = *descA;
+                    //script.locals.structValueTypes[i32(lookupIndex) + lastLocalAmount] = *descA;
                 }
                 *value = stack.back();
                 stack.pop_back();
@@ -389,6 +407,7 @@ InterpretResult runCode(Script& script)
 
             case OP_GET_GLOBAL:
             {
+
                 i16 lookupIndex = i16(*ip++);
                 TypeOfValue *value = nullptr;
                 ValueTypeDesc *desc = nullptr;
@@ -400,8 +419,13 @@ InterpretResult runCode(Script& script)
                 //}
                 //else
                 {
-                    value = &script.locals.structValueArray[i32(lookupIndex) + lastLocalAmount];
-                    desc = &script.locals.structValueTypes[i32(lookupIndex) + lastLocalAmount];
+                    i32 arrSize = (i32)script.locals.structValueArray.size();
+                    i32 checkIndex = arrSize + lookupIndex;
+                    checkIndex %= arrSize;
+                    value = &script.locals.structValueArray[checkIndex];
+                    desc = &script.locals.structValueTypes[checkIndex];
+                    //value = &script.locals.structValueArray[i32(lookupIndex) + lastLocalAmount];
+                    //desc = &script.locals.structValueTypes[i32(lookupIndex) + lastLocalAmount];
                 }
                 stack.push_back(*value);
                 stackValueInfo.push_back(*desc);
@@ -420,8 +444,13 @@ InterpretResult runCode(Script& script)
                 //}
                 //else
                 {
-                    value = &script.locals.structValueArray[i32(lookupIndex) + lastLocalAmount];
-                    desc = &script.locals.structValueTypes[i32(lookupIndex) + lastLocalAmount];
+                    i32 arrSize = (i32)script.locals.structValueArray.size();
+                    i32 checkIndex = arrSize + lookupIndex;
+                    checkIndex %= arrSize;
+                    value = &script.locals.structValueArray[checkIndex];
+                    desc = &script.locals.structValueTypes[checkIndex];
+                    //value = &script.locals.structValueArray[i32(lookupIndex) + lastLocalAmount];
+                    //desc = &script.locals.structValueTypes[i32(lookupIndex) + lastLocalAmount];
                 }
                 *value = stack.back();
                 stack.pop_back();

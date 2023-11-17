@@ -283,31 +283,60 @@ static void patchJumpAbsolute(Parser& parser, i32 codeAddressToPatch, i32 absolu
 
 }
 
-static bool namedVariable(Parser& parser, const Token& token, i32& outStructIndex, i32& outIndex, i32& outDepthChange)
+static bool findVariableToken(
+    const Parser& parser,
+    const Token& token,
+    i32& outStructIndex,
+    i32& outIndex,
+    i32& outDepthChange)
 {
-    i32 structIndex = parser.script.structIndex;
-    outStructIndex = structIndex;
+    i32 structIndex = outStructIndex;
     std::string searchString = getStringFromTokenName(token);
     i32 backIndex = 0;
     outDepthChange = 0;
     while(structIndex != -1)
     {
         const StructStack& s = parser.script.structStacks[structIndex];
-        for(i32 index = 0; index < s.structSymbolNameIndices.size();  ++index)
+        if(structIndex > 0)
         {
-            i32 realIndex = index;
-            if(parser.script.allSymbolNames[s.structSymbolNameIndices[realIndex]] == searchString)
+            for (i32 index = s.structSymbolNameIndices.size() - 1; index >= 0; --index)
             {
-                outIndex = index; // +backIndex;
-                return true;
+                --backIndex;
+                i32 realIndex = index;
+                if (parser.script.allSymbolNames[s.structSymbolNameIndices[realIndex]] == searchString)
+                {
+                    outIndex = backIndex;
+                    return true;
+                }
+            }
+        }
+        else
+        {
+            for (i32 index = 0; index < s.structSymbolNameIndices.size(); ++index)
+            {
+                i32 realIndex = index;
+                if (parser.script.allSymbolNames[s.structSymbolNameIndices[realIndex]] == searchString)
+                {
+                    outIndex = index; // +backIndex;
+                    return true;
+                }
             }
         }
         outDepthChange++;
         structIndex = s.parentStructIndex;
         outStructIndex = structIndex;
-        if(structIndex >= 0)
-            backIndex -= parser.script.structStacks[structIndex].structValueArray.size();
     }
+    return false;
+}
+
+static bool namedVariable(Parser& parser, const Token& token, i32& outStructIndex, i32& outIndex, i32& outDepthChange)
+{
+    outStructIndex = parser.script.structIndex;
+    if(findVariableToken(parser, token, outStructIndex, outIndex, outDepthChange))
+    {
+        return true;
+    }
+    std::string searchString = getStringFromTokenName(token);
     std::string errorStr = "No variable: ";
     errorStr += searchString;
     errorStr += " defined for getting.";
@@ -338,8 +367,9 @@ static void variable(Parser& parser)
         emitByteCode(parser, OP_GET_GLOBAL);
 
         parser.script.patchGetters.push_back({
-                .variableIndexInStruct = index,
-                .depthChange = depthChange,
+                .token = previous,
+                //.variableIndexInStruct = index,
+                //.depthChange = depthChange,
                 .structIndex = parser.script.structIndex,
                 .byteCodeIndex = i32(parser.script.byteCode.size())
             });
@@ -538,8 +568,9 @@ static void expression(Parser& parser)
             emitByteCode(parser, OP_SET_GLOBAL);
 
             parser.script.patchGetters.push_back({
-                .variableIndexInStruct = index,
-                .depthChange = depthChange,
+                .token = previousToken,
+                //.variableIndexInStruct = index,
+                //.depthChange = depthChange,
                 .structIndex = parser.script.structIndex,
                 .byteCodeIndex = i32(parser.script.byteCode.size())
             });
@@ -778,9 +809,15 @@ static i32 parseVariable(Parser& parser, const char* errorMessage)
     return identifierConstant(parser, parser.previous);
 }
 
-static void defineVariable(Parser& parser, i32 index)
+static void defineVariable(Parser& parser, i32 index, const Token& token)
 {
     emitByteCode(parser, OP_DEFINE_GLOBAL);
+    parser.script.patchGetters.push_back({
+         .token = token,
+         .structIndex = parser.script.structIndex,
+         .byteCodeIndex = i32(parser.script.byteCode.size())
+     });
+
     emitByteCode(parser, Op(index));
 }
 
@@ -795,7 +832,7 @@ static void letDeclaration(Parser& parser)
 
     i32 global = identifierConstant(parser, previous);
 
-    defineVariable(parser, global);
+    defineVariable(parser, global, previous);
 }
 
 static void fnDeclaration(Parser& parser)
@@ -963,7 +1000,7 @@ static void fnDeclaration(Parser& parser)
         for(int i = func.functionParameterNameIndices.size() - 1; i >= 0; --i)
         {
             i32 global = identifierConstant(parser, tokens[i]);
-            defineVariable(parser, global);
+            defineVariable(parser, global, tokens[i]);
         }
 
         block(parser);
@@ -1025,16 +1062,19 @@ static void endCompiler(Parser& parser)
         else
         {
             i32 offset = 0;
-            i32 depthChange = patchGet.depthChange;
+            i32 depthChange = 0;
             i32 structIndex = patchGet.structIndex;
-            while(depthChange > 0)
-            {
-                structIndex = parser.script.structStacks[structIndex].parentStructIndex;
-                offset -= parser.script.structStacks[structIndex].structValueArray.size();
-                --depthChange;
-            }
 
-            parser.script.byteCode[patchGet.byteCodeIndex] = offset + patchGet.variableIndexInStruct;
+            findVariableToken(parser, patchGet.token, structIndex, offset, depthChange);
+
+            //while(depthChange > 0)
+            //{
+            //    structIndex = parser.script.structStacks[structIndex].parentStructIndex;
+            //    offset -= parser.script.structStacks[structIndex].structValueArray.size();
+            //    --depthChange;
+            //}
+
+            parser.script.byteCode[patchGet.byteCodeIndex] = offset; // + patchGet.variableIndexInStruct;
         }
     }
     

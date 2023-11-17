@@ -38,8 +38,9 @@ struct PatchFunctions
 
 struct PatchGetter
 {
-    i32 variableIndexInStruct;
-    i32 depthChange;
+    Token token;
+    //i32 variableIndexInStruct;
+    //i32 depthChange;
     i32 structIndex;
     i32 byteCodeIndex;
 };

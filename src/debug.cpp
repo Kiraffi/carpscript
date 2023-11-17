@@ -78,6 +78,7 @@ static i32 returnInstruction(const char* name, const Script& script, i32 offset)
 
 static i32 globalVar(const char* name, const Script& script, i32 offset)
 {
+    /*
     i32 structIndex = script.structIndex;
     i16 lookupIndex = i16(script.byteCode[offset + 1]);
     while(lookupIndex < 0)
@@ -105,6 +106,7 @@ static i32 globalVar(const char* name, const Script& script, i32 offset)
         printf("%-32s %4x '%s'\n", name, lookupIndex, "UNKNOWN");
 
     }
+     */
     return offset + 1 + 1; // getValueTypeSizeInOpCodes(type);
 }
 

@@ -10,6 +10,7 @@
 
 #define DEBUG_PRINT_CODE 1
 #define DEBUG_TRACE_EXEC 0
+#define DEBUG_PRINT_LOCALS 0
 
 struct Script;
 using TypeOfValue = u64;
