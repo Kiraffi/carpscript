@@ -1,0 +1,34 @@
+
+let prev1 = 1;
+let prev2 = 0;
+
+let n = 2;
+let fibSum = 0;
+while(n < 130)
+{
+    fibSum = prev1 + prev2;
+    prev2 = prev1;
+    prev1 = fibSum;
+    n = n + 1;
+}
+
+print fibSum;
+let boo = 8;
+print "Before func";
+fn fooFn(boo: i32, hoo: f32)
+{
+   print "In foo fn";
+   print hoo;
+   print boo;
+   return boo + 3;
+}
+
+print "Past func";
+
+print "testing0";
+print fooFn(13, 8.5);
+print "testing1";
+print "out of foo";
+print boo;
+
+print "testing2";

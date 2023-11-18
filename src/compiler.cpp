@@ -332,6 +332,7 @@ static bool findVariableToken(
 static bool namedVariable(Parser& parser, const Token& token, i32& outStructIndex, i32& outIndex, i32& outDepthChange)
 {
     outStructIndex = parser.script.structIndex;
+    outIndex = 0;
     if(findVariableToken(parser, token, outStructIndex, outIndex, outDepthChange))
     {
         return true;
@@ -368,9 +369,8 @@ static void variable(Parser& parser)
 
         parser.script.patchGetters.push_back({
                 .token = previous,
-                //.variableIndexInStruct = index,
-                //.depthChange = depthChange,
-                .structIndex = parser.script.structIndex,
+                .currentStructIndex = parser.script.structIndex,
+                .structIndex = structIndex,
                 .byteCodeIndex = i32(parser.script.byteCode.size())
             });
 
@@ -459,7 +459,7 @@ static void fnCall(Parser& parser)
             errorAtCurrent(parser, errTxt.c_str());
         }
         emitByteCode(parser, OP_CODE_PUSH_RETURN_ADDRESS);
-        i32 returnAddress = parser.script.byteCode.size() + 5;
+        i32 returnAddress = (i32)parser.script.byteCode.size() + 5;
         emitByteCode(parser, Op(returnAddress & 0xffff));
         emitByteCode(parser, Op(returnAddress >> 16));
 
@@ -569,9 +569,8 @@ static void expression(Parser& parser)
 
             parser.script.patchGetters.push_back({
                 .token = previousToken,
-                //.variableIndexInStruct = index,
-                //.depthChange = depthChange,
-                .structIndex = parser.script.structIndex,
+                .currentStructIndex = parser.script.structIndex,
+                .structIndex = structIndex,
                 .byteCodeIndex = i32(parser.script.byteCode.size())
             });
 
@@ -812,12 +811,15 @@ static i32 parseVariable(Parser& parser, const char* errorMessage)
 static void defineVariable(Parser& parser, i32 index, const Token& token)
 {
     emitByteCode(parser, OP_DEFINE_GLOBAL);
-    parser.script.patchGetters.push_back({
-         .token = token,
-         .structIndex = parser.script.structIndex,
-         .byteCodeIndex = i32(parser.script.byteCode.size())
-     });
-
+    if(parser.script.structIndex > 0)
+    {
+        parser.script.patchGetters.push_back({
+             .token = token,
+             .currentStructIndex = parser.script.structIndex,
+             .structIndex = parser.script.structIndex,
+             .byteCodeIndex = i32(parser.script.byteCode.size())
+         });
+    }
     emitByteCode(parser, Op(index));
 }
 
@@ -1066,7 +1068,13 @@ static void endCompiler(Parser& parser)
             i32 structIndex = patchGet.structIndex;
 
             findVariableToken(parser, patchGet.token, structIndex, offset, depthChange);
-
+            i32 currentStructIndex = patchGet.currentStructIndex;
+            while(patchGet.structIndex != 0 && currentStructIndex != patchGet.structIndex)
+            {
+                assert(currentStructIndex >= 0);
+                offset -= (i32)parser.script.structStacks[currentStructIndex].structValueArray.size();
+                currentStructIndex = parser.script.structStacks[currentStructIndex].parentStructIndex;
+            }
             //while(depthChange > 0)
             //{
             //    structIndex = parser.script.structStacks[structIndex].parentStructIndex;

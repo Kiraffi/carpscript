@@ -1,0 +1,13 @@
+
+fn fib(nn: i32)
+{
+    if (nn < 2)
+    {
+        return nn;
+    }
+    return fib(nn - 2) + fib(nn - 1);
+}
+
+print "fib";
+print fib(20);
+

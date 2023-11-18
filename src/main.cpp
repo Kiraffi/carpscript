@@ -89,7 +89,7 @@ int main(int argc, const char** argv)
     }
     else
     {
-        const char* filename = "prog/print.carp";
+        const char* filename = "prog/recu.carp";
         if(!runFile(filename))
         {
             printf("Failed to run file: %s\n", filename);

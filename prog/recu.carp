@@ -1,0 +1,21 @@
+
+fn recursion(value: i32);
+
+recursion(1);
+
+fn recursion(value: i32)
+{
+    print value;
+    if(value > 3)
+    {
+        return 321;
+    }
+    let recVal = value + recursion(value + 1);
+    print "out of recursion";
+    print value;
+    print "recursion value:";
+    print recVal;
+    return recVal;
+}
+
+print "at end";

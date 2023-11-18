@@ -34,6 +34,8 @@ struct HelperStruct
 
 static HelperStruct valuesEqualHelper(std::vector<TypeOfValue>& stack, std::vector<ValueTypeDesc> &stackValueInfo)
 {
+    assert(stack.size() >= 2);
+    assert(stackValueInfo.size() >= 2);
     HelperStruct result;
     result.valueB = stack.back();
     stack.pop_back();
@@ -228,8 +230,17 @@ InterpretResult runCode(Script& script)
             }
             printf("-- Locals end ---\n");
         #endif
-
         assert(stack.size() == stackValueInfo.size());
+        #if DEBUG_PRINT_STACK
+            printf("\n--- Stack ---\n");
+            for(i32 i = 0; i < stack.size(); ++i)
+            {
+                printf("%i: Type: %i, value %i\n",
+                       i, stackValueInfo[i].valueType, stack[i]);
+            }
+            printf("-- Stack end ---\n");
+
+        #endif
         assert(ip >= ipStart && ip < ipStart + byteCodeSize);
          OpCodeType opCode = *ip++;
         assert(ip >= ipStart && ip <= ipStart + byteCodeSize);
@@ -407,7 +418,6 @@ InterpretResult runCode(Script& script)
 
             case OP_GET_GLOBAL:
             {
-
                 i16 lookupIndex = i16(*ip++);
                 TypeOfValue *value = nullptr;
                 ValueTypeDesc *desc = nullptr;

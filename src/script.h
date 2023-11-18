@@ -41,6 +41,8 @@ struct PatchGetter
     Token token;
     //i32 variableIndexInStruct;
     //i32 depthChange;
+    //i32 startIndexInStruct;
+    i32 currentStructIndex;
     i32 structIndex;
     i32 byteCodeIndex;
 };
