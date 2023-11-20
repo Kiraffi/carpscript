@@ -13,6 +13,8 @@ add_executable(carpscript src/main.cpp
         src/mymemory.cpp
         src/mymemory.h
         src/mytypes.h
+        src/nativefns.h
+        src/nativefns.cpp
         src/op.h
         src/script.cpp
         src/script.h
@@ -22,12 +24,10 @@ add_executable(carpscript src/main.cpp
         src/scanner.cpp
 
         src/main_old.cpp
-        src/nativefns.h
-        src/nativefns.cpp
 )
 
-set_target_properties(carpscript
-    PROPERTIES
-    RUNTIME_OUTPUT_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/"
-)
+#set_target_properties(carpscript
+#   PROPERTIES
+#   RUNTIME_OUTPUT_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/"
+#)
 

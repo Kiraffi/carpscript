@@ -34,7 +34,8 @@ static bool runFile(const char* filename)
     Script& script = mem.scripts[addNewScript(mem)];
 
     mem.scriptFile.resize(sz + 1);
-    fread(mem.scriptFile.data(), 1, sz, file);
+    size_t readBytes = fread(mem.scriptFile.data(), 1, sz, file);
+    assert(readBytes == sz);
     mem.scriptFile[sz] = '\0';
     fclose(file);
 

@@ -13,7 +13,7 @@ struct NativeReturn
     ValueTypeDesc desc;
 };
 
-using NativeFn = NativeReturn (*)(i32 argc, const TypeOfValue* values, const ValueTypeDesc* descs);
+using NativeFn = NativeReturn (*)(Script& script, i32 argc, const TypeOfValue* values, const ValueTypeDesc* descs);
 
 struct StructStack
 {

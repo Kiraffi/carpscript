@@ -211,7 +211,18 @@ InterpretResult runCode(Script& script)
 
     const i32* lines = script.byteCodeLines.data();
 
-    setNative(script, "clock", &clockNative);
+    if(!setNative(script, "clock", &clockNative))
+    {
+        return InterpretResult_NativeBindError;
+    }
+    if(!setNative(script, "addNative", &addNative))
+    {
+        return InterpretResult_NativeBindError;
+    }
+    if(!setNative(script, "stringNative", &stringNative))
+    {
+        return InterpretResult_NativeBindError;
+    }
 
 
     // Does stack need type info stack?
@@ -627,12 +638,12 @@ InterpretResult runCode(Script& script)
                 NativeReturn result{};
                 if(params == 0)
                 {
-                    result = fn.callFn(params, nullptr, nullptr);
+                    result = fn.callFn(script, params, nullptr, nullptr);
                 }
                 else
                 {
                     i32 index = i32(stack.size() - params);
-                    result = fn.callFn(params, &stack[index], &stackValueInfo[index]);
+                    result = fn.callFn(script, params, &stack[index], &stackValueInfo[index]);
                 }
                 for(int i = 0; i < params; ++i)
                 {

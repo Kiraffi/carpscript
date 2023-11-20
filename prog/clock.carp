@@ -9,5 +9,13 @@ fn fib(nn: i32)
 
 let start = call clock();
 print "fib";
-print fib(35);
+print fib(25);
 print call clock() - start;
+
+print "Add native";
+print call addNative(1.5, 2.25);
+
+let natstr = call stringNative();
+
+print natstr;
+print natstr;

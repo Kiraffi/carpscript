@@ -8,6 +8,7 @@ enum InterpretResult
 {
     InterpretResult_Ok,
     InterpretResult_CompileError,
+    InterpretResult_NativeBindError,
     InterpretResult_RuntimeError,
 
     InterpretResult_Count,
