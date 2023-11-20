@@ -22,6 +22,8 @@ add_executable(carpscript src/main.cpp
         src/scanner.cpp
 
         src/main_old.cpp
+        src/nativefns.h
+        src/nativefns.cpp
 )
 
 set_target_properties(carpscript

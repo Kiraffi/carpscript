@@ -41,6 +41,7 @@ enum Op : OpCodeType
     // No offset, function call direct jump
     OP_JUMP_ADDRESS_DIRECTLY,
     OP_CODE_PUSH_RETURN_ADDRESS,
+    OP_NATIVE_CALL,
 
     OP_CONSTANT_BOOL, // = 0x100,
     OP_CONSTANT_I8,
@@ -95,6 +96,7 @@ static const char* getOpCodeName(OpCodeType type)
         case OP_JUMP: return "OP_JUMP";
         case OP_JUMP_ADDRESS_DIRECTLY: return "OP_JUMP_ADDRESS_DIRECTLY";
         case OP_CODE_PUSH_RETURN_ADDRESS: return "OP_CODE_PUSH_RETURN_ADDRESS";
+        case OP_NATIVE_CALL: return "OP_NATIVE_CALL";
 
         case OP_CONSTANT_BOOL: return "OP_CONSTANT_BOOL";
         case OP_CONSTANT_I8: return "OP_CONSTANT_I8";

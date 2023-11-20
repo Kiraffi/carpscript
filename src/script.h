@@ -7,6 +7,14 @@
 #include <string>
 #include <vector>
 
+struct NativeReturn
+{
+    TypeOfValue value;
+    ValueTypeDesc desc;
+};
+
+using NativeFn = NativeReturn (*)(i32 argc, const TypeOfValue* values, const ValueTypeDesc* descs);
+
 struct StructStack
 {
     StructDesc desc;
@@ -29,8 +37,15 @@ struct Function
     bool declared;
 };
 
+struct NativePatchFunction
+{
+    std::vector<ValueTypeDesc> parameterTypes;
+    std::vector<i32> patchAddresses;
+    NativeFn callFn;
+    Token token;
+};
 
-struct PatchFunctions
+struct PatchFunction
 {
     i32 functionIndex;
     i32 addressToPatch;
@@ -62,7 +77,8 @@ struct Script
     std::vector<i32> functionReturnAddresses;
 
     std::vector<Function> functions;
-    std::vector<PatchFunctions> patchFunctions;
+    std::vector<PatchFunction> patchFunctions;
+    std::vector<NativePatchFunction> nativePatchFunctions;
 
     std::vector<PatchGetter> patchGetters;
 

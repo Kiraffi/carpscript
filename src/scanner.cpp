@@ -41,6 +41,7 @@ static constexpr Keyword keywords[]{
     Keyword{ "print", TokenType::PRINT, 5 },
     Keyword{ "return", TokenType::RETURN, 6 },
     Keyword{ "while", TokenType::WHILE, 5 },
+    Keyword{ "call", TokenType::NATCALL, 4 },
 };
 
 static i32 getScannerCurrLenToStartToken(const Scanner& scanner)

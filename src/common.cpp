@@ -4,6 +4,7 @@
 
 #include <inttypes.h>
 #include <stdio.h>
+#include <string.h>
 
 void printValue(const Script& script, const u64* value, ValueType type)
 {
@@ -36,4 +37,12 @@ std::string getStringFromTokenName(const Token& token)
 {
     std::string s = std::string((const char*)token.start, token.len);
     return s;
+}
+bool areTokensSame(const Token& tokenA, const Token& tokenB)
+{
+    if(tokenA.len != tokenB.len || tokenA.type != tokenB.type)
+    {
+        return false;
+    }
+    return memcmp(tokenA.start, tokenB.start, tokenA.len) == 0;
 }

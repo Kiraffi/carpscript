@@ -25,7 +25,7 @@ enum class TokenType: u8
     LET, MUT,
     STRUCT,
     AND, OR,
-    ELSE, FN, FOR, IF, NIL, WHILE,
+    ELSE, FN, FOR, IF, NIL, WHILE, NATCALL,
     PRINT, RETURN,
     TRUE, FALSE,
 
@@ -54,7 +54,7 @@ static const char* TOKEN_NAMES[] = {
     "LET", "MUT",
     "STRUCT",
     "AND", "OR",
-    "ELSE", "FN", "FOR", "IF", "NIL", "WHILE",
+    "ELSE", "FN", "FOR", "IF", "NIL", "WHILE", "NATCALL",
     "PRINT", "RETURN",
     "TRUE", "FALSE",
 

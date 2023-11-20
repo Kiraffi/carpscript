@@ -129,5 +129,6 @@ struct StructDesc
 
 void printValue(const Script& script, const TypeOfValue* value, ValueType type);
 std::string getStringFromTokenName(const Token& token);
+bool areTokensSame(const Token& tokenA, const Token& tokenB);
 
 

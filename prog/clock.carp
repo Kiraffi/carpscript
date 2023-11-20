@@ -1,0 +1,13 @@
+fn fib(nn: i32)
+{
+    if (nn < 2)
+    {
+        return nn;
+    }
+    return fib(nn - 2) + fib(nn - 1);
+}
+
+let start = call clock();
+print "fib";
+print fib(35);
+print call clock() - start;

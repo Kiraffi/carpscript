@@ -40,6 +40,7 @@ enum Precedence
     PREC_TERM,        // + -
     PREC_FACTOR,      // * /
     PREC_UNARY,       // ! -
+    PREC_NATCALL,     // call
     PREC_CALL,        // . ()
     PREC_PRIMARY,
 };
@@ -73,6 +74,7 @@ static void declaration(Parser& parser);
 static void printStatement(Parser& parser);
 
 static void advance(Parser& parser);
+static void callNatFn(Parser& parser);
 
 
 static bool check(const Parser& parser, TokenType type)
@@ -104,44 +106,45 @@ static ParseRule getRule(TokenType type)
 
     switch(type)
     {
-        case TokenType::LEFT_PAREN:       return {grouping, fnCall, PREC_CALL};         break;
-        case TokenType::RIGHT_PAREN:      return {NULL,     NULL,   PREC_NONE};         break;
-        case TokenType::LEFT_BRACE:       return {NULL,     NULL,   PREC_NONE};         break;
-        case TokenType::RIGHT_BRACE:      return {NULL,     NULL,   PREC_NONE};         break;
-        case TokenType::COMMA:            return {NULL,     NULL,   PREC_NONE};         break;
-        case TokenType::DOT:              return {NULL,     NULL,   PREC_NONE};         break;
-        case TokenType::MINUS:            return {unary,    binary, PREC_TERM};         break;
-        case TokenType::PLUS:             return {NULL,     binary, PREC_TERM};         break;
-        case TokenType::SEMICOLON:        return {NULL,     NULL,   PREC_NONE};         break;
-        case TokenType::SLASH:            return {NULL,     binary, PREC_FACTOR};       break;
-        case TokenType::STAR:             return {NULL,     binary, PREC_FACTOR};       break;
-        case TokenType::BANG:             return {unary,    NULL,   PREC_NONE};         break;
-        case TokenType::BANG_EQUAL:       return {NULL,     binary, PREC_EQUALITY};     break;
-        case TokenType::EQUAL:            return {NULL,     NULL,   PREC_NONE};         break;
-        case TokenType::EQUAL_EQUAL:      return {NULL,     binary, PREC_COMPARISON};   break;
-        case TokenType::GREATER:          return {NULL,     binary, PREC_COMPARISON};   break;
-        case TokenType::GREATER_EQUAL:    return {NULL,     binary, PREC_COMPARISON};   break;
-        case TokenType::LESSER:           return {NULL,     binary, PREC_COMPARISON};   break;
-        case TokenType::LESSER_EQUAL:     return {NULL,     binary, PREC_COMPARISON};   break;
-        case TokenType::IDENTIFIER:       return {variable, NULL,   PREC_NONE};         break;
-        case TokenType::LITERAL_STRING:   return {string,   NULL,   PREC_NONE};         break;
-        case TokenType::NUMBER:           return {number,   NULL,   PREC_NONE};         break;
-        case TokenType::INTEGER:          return {number,   NULL,   PREC_NONE};         break;
-        case TokenType::AND:              return {NULL,     andFn,  PREC_AND};          break;
-        case TokenType::STRUCT:           return {NULL,     NULL,   PREC_NONE};         break;
-        case TokenType::ELSE:             return {NULL,     NULL,   PREC_NONE};         break;
-        case TokenType::FALSE:            return {literal,  NULL,   PREC_NONE};         break;
-        case TokenType::FOR:              return {NULL,     NULL,   PREC_NONE};         break;
-        case TokenType::FN:               return {NULL,     NULL,   PREC_NONE};         break;
-        case TokenType::IF:               return {NULL,     NULL,   PREC_NONE};         break;
-        case TokenType::NIL:              return {literal,  NULL,   PREC_NONE};         break;
-        case TokenType::OR:               return {NULL,     orFn,   PREC_OR};           break;
-        case TokenType::PRINT:            return {NULL,     NULL,   PREC_NONE};         break;
-        case TokenType::RETURN:           return {NULL,     NULL,   PREC_NONE};         break;
-        case TokenType::TRUE:             return {literal,  NULL,   PREC_NONE};         break;
-        case TokenType::WHILE:            return {NULL,     NULL,   PREC_NONE};         break;
-        case TokenType::TOKEN_ERROR:      return {NULL,     NULL,   PREC_NONE};         break;
-        case TokenType::END_OF_FILE:      return {NULL,     NULL,   PREC_NONE};         break;
+        case TokenType::NATCALL:          return {callNatFn,NULL,       PREC_NATCALL};      break;
+        case TokenType::LEFT_PAREN:       return {grouping, fnCall,     PREC_CALL};         break;
+        case TokenType::RIGHT_PAREN:      return {NULL,     NULL,       PREC_NONE};         break;
+        case TokenType::LEFT_BRACE:       return {NULL,     NULL,       PREC_NONE};         break;
+        case TokenType::RIGHT_BRACE:      return {NULL,     NULL,       PREC_NONE};         break;
+        case TokenType::COMMA:            return {NULL,     NULL,       PREC_NONE};         break;
+        case TokenType::DOT:              return {NULL,     NULL,       PREC_NONE};         break;
+        case TokenType::MINUS:            return {unary,    binary,     PREC_TERM};         break;
+        case TokenType::PLUS:             return {NULL,     binary,     PREC_TERM};         break;
+        case TokenType::SEMICOLON:        return {NULL,     NULL,       PREC_NONE};         break;
+        case TokenType::SLASH:            return {NULL,     binary,     PREC_FACTOR};       break;
+        case TokenType::STAR:             return {NULL,     binary,     PREC_FACTOR};       break;
+        case TokenType::BANG:             return {unary,    NULL,       PREC_NONE};         break;
+        case TokenType::BANG_EQUAL:       return {NULL,     binary,     PREC_EQUALITY};     break;
+        case TokenType::EQUAL:            return {NULL,     NULL,       PREC_NONE};         break;
+        case TokenType::EQUAL_EQUAL:      return {NULL,     binary,     PREC_COMPARISON};   break;
+        case TokenType::GREATER:          return {NULL,     binary,     PREC_COMPARISON};   break;
+        case TokenType::GREATER_EQUAL:    return {NULL,     binary,     PREC_COMPARISON};   break;
+        case TokenType::LESSER:           return {NULL,     binary,     PREC_COMPARISON};   break;
+        case TokenType::LESSER_EQUAL:     return {NULL,     binary,     PREC_COMPARISON};   break;
+        case TokenType::IDENTIFIER:       return {variable, NULL,       PREC_NONE};         break;
+        case TokenType::LITERAL_STRING:   return {string,   NULL,       PREC_NONE};         break;
+        case TokenType::NUMBER:           return {number,   NULL,       PREC_NONE};         break;
+        case TokenType::INTEGER:          return {number,   NULL,       PREC_NONE};         break;
+        case TokenType::AND:              return {NULL,     andFn,      PREC_AND};          break;
+        case TokenType::STRUCT:           return {NULL,     NULL,       PREC_NONE};         break;
+        case TokenType::ELSE:             return {NULL,     NULL,       PREC_NONE};         break;
+        case TokenType::FALSE:            return {literal,  NULL,       PREC_NONE};         break;
+        case TokenType::FOR:              return {NULL,     NULL,       PREC_NONE};         break;
+        case TokenType::FN:               return {NULL,     NULL,       PREC_NONE};         break;
+        case TokenType::IF:               return {NULL,     NULL,       PREC_NONE};         break;
+        case TokenType::NIL:              return {literal,  NULL,       PREC_NONE};         break;
+        case TokenType::OR:               return {NULL,     orFn,       PREC_OR};           break;
+        case TokenType::PRINT:            return {NULL,     NULL,       PREC_NONE};         break;
+        case TokenType::RETURN:           return {NULL,     NULL,       PREC_NONE};         break;
+        case TokenType::TRUE:             return {literal,  NULL,       PREC_NONE};         break;
+        case TokenType::WHILE:            return {NULL,     NULL,       PREC_NONE};         break;
+        case TokenType::TOKEN_ERROR:      return {NULL,     NULL,       PREC_NONE};         break;
+        case TokenType::END_OF_FILE:      return {NULL,     NULL,       PREC_NONE};         break;
         default:
             return {NULL, NULL, PREC_NONE};
     }
@@ -469,6 +472,65 @@ static void fnCall(Parser& parser)
         parser.script.patchFunctions.push_back({.functionIndex = functionIndex, .addressToPatch = jmpPoint});
     }
 }
+
+static void callNatFn(Parser& parser)
+{
+    if(parser.current.type != TokenType::IDENTIFIER)
+    {
+        errorAt(parser, parser.current, "Expected function name identifier for native calling function.");
+    }
+    Token currentToken = parser.current;
+    i32 foundIndex = -1;
+    for(i32 i = 0; i < parser.script.nativePatchFunctions.size(); ++i)
+    {
+        if(areTokensSame(currentToken, parser.script.nativePatchFunctions[i].token))
+        {
+            foundIndex = i;
+            break;
+        }
+    }
+    consume(parser, TokenType::IDENTIFIER, "Expected function name");
+    consume(parser, TokenType::LEFT_PAREN, "Expected '(' after function name");
+    i32 paramCount = 0;
+    if(!check(parser, TokenType::RIGHT_PAREN))
+    {
+        do {
+            expression(parser);
+            ++paramCount;
+
+        } while(match(parser, TokenType::COMMA));
+
+    }
+    consume(parser, TokenType::RIGHT_PAREN, "Expected ')' after function arguments");
+    if(foundIndex != -1)
+    {
+        NativePatchFunction &fn = parser.script.nativePatchFunctions[foundIndex];
+        if(fn.parameterTypes.size() != paramCount)
+        {
+            std::string errTxt = "Expected parameter count: ";
+            errTxt += std::to_string(fn.parameterTypes.size());
+            errTxt += " got ";
+            errTxt += std::to_string(paramCount);
+            errTxt += " parameters.";
+            errorAtCurrent(parser, errTxt.c_str());
+        }
+    }
+    else
+    {
+        parser.script.nativePatchFunctions.push_back({});
+        foundIndex = parser.script.nativePatchFunctions.size() - 1;
+        for(int i = 0; i < paramCount; ++i)
+        {
+            // TODO: fix the actual types?
+            parser.script.nativePatchFunctions[foundIndex].parameterTypes.push_back({});
+        }
+        parser.script.nativePatchFunctions[foundIndex].token = currentToken;
+        parser.script.nativePatchFunctions[foundIndex].callFn = nullptr;
+    }
+    emitByteCode(parser, OP_NATIVE_CALL);
+    emitByteCode(parser, Op(foundIndex));
+}
+
 
 static void string(Parser& parser)
 {
@@ -1039,7 +1101,7 @@ static void declaration(Parser& parser)
 
 static void endCompiler(Parser& parser)
 {
-    for(const PatchFunctions& patchFns : parser.script.patchFunctions)
+    for(const PatchFunction& patchFns : parser.script.patchFunctions)
     {
         if(patchFns.addressToPatch < 0
             || patchFns.addressToPatch >= parser.script.byteCode.size()

@@ -3,6 +3,7 @@
 #include "compiler.h"
 #include "debug.h"
 #include "mymemory.h"
+#include "nativefns.h"
 #include "op.h"
 #include "script.h"
 
@@ -18,6 +19,24 @@ struct VMRuntime
     const i32* lines;
     i32 line;
 };
+
+static bool setNative(Script& script, const std::string& name, NativeFn callFn)
+{
+    if(callFn == nullptr)
+    {
+        return false;
+    }
+    for(NativePatchFunction& fn : script.nativePatchFunctions)
+    {
+        const std::string &patchName = getStringFromTokenName(fn.token);
+        if(name == patchName)
+        {
+            fn.callFn = callFn;
+            return true;
+        }
+    }
+    return false;
+}
 
 static bool truthy(TypeOfValue value)
 {
@@ -181,6 +200,9 @@ static i32 doBinaryOp(
     return 0;
 }
 
+
+
+
 InterpretResult runCode(Script& script)
 {
     const i32 byteCodeSize = (i32)script.byteCode.size();
@@ -188,6 +210,9 @@ InterpretResult runCode(Script& script)
     const OpCodeType* ip = ipStart;
 
     const i32* lines = script.byteCodeLines.data();
+
+    setNative(script, "clock", &clockNative);
+
 
     // Does stack need type info stack?
     u32 stackIndex = 0;
@@ -586,7 +611,38 @@ InterpretResult runCode(Script& script)
                 script.functionReturnAddresses.push_back(address);
                 break;
             }
-
+            case OP_NATIVE_CALL:
+            {
+                i16 nativeCallIndex = *ip++;
+                if(nativeCallIndex >= script.nativePatchFunctions.size() ||
+                    script.nativePatchFunctions[nativeCallIndex].callFn == nullptr)
+                {
+                    runtimeError(VMRuntime {.stack = stack, .codeStart = ipStart, .ip = ip,
+                                     .lines = lines, },
+                                 "Failed to do native call!");
+                    return InterpretResult_RuntimeError;
+                }
+                const NativePatchFunction& fn = script.nativePatchFunctions[nativeCallIndex];
+                i32 params = i32(fn.parameterTypes.size());
+                NativeReturn result{};
+                if(params == 0)
+                {
+                    result = fn.callFn(params, nullptr, nullptr);
+                }
+                else
+                {
+                    i32 index = i32(stack.size() - params);
+                    result = fn.callFn(params, &stack[index], &stackValueInfo[index]);
+                }
+                for(int i = 0; i < params; ++i)
+                {
+                    stack.pop_back();
+                    stackValueInfo.pop_back();
+                }
+                stack.push_back(result.value);
+                stackValueInfo.push_back(result.desc);
+                break;
+            }
             case OP_ADD:
             case OP_SUB:
             case OP_MUL:
